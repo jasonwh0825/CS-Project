@@ -17,7 +17,7 @@ src/main/java/com/mygame/
     └── entity/                  # 所有的遊戲角色物件
         ├── Entity.java          # 所有會動、有血量物件的「爺爺類別」
         ├── Castle.java          # 主堡 (內含武器切換、大招能量、升級邏輯)
-        ├── Bullet.java          # 子彈類別 (可區分玩家子彈、敵人重炮、雷電效果)
+        ├── WeaponType.java          # 子彈類別 (可區分玩家子彈、敵人重炮、雷電效果)
         └── enemy/
             ├── Enemy.java       # 所有敵人的基底類別
             ├── MeleeEnemy.java  # 近戰怪 (實作左右蛇行演算法)

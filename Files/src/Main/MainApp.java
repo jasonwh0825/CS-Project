@@ -21,6 +21,11 @@ public class MainApp extends Application {
 
         // 3. 建立 JavaFX 視現場 (Scene) 並放入視窗 (Stage)
         Scene scene = new Scene(gamePane);
+        scene.setOnMouseClicked(event -> {
+            double mouseX = event.getX();
+            double mouseY = event.getY();
+            gameLoop.playerShoot(mouseX, mouseY);
+        });
         primaryStage.setTitle("Project");
         primaryStage.setScene(scene);
         primaryStage.setResizable(false); // 固定視窗大小防止跑版

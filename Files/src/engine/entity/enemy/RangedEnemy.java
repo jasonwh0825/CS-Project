@@ -1,5 +1,7 @@
 package engine.entity.enemy;
 
+import engine.entity.Bullet;
+import engine.entity.Castle;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.paint.Color;
 
@@ -7,28 +9,31 @@ public class RangedEnemy extends Enemy {
     private int attackCooldown = 0;
 
     public RangedEnemy(double x, double y) {
-        // 綠色方形，速度中等
+        // 綠色方形，速度中等(1.2)，血量(50)
         super(new Rectangle(30, 30, Color.GREEN), x, y, 50, 1.2, 20, 25);
     }
 
+    // 就是這個方法！必須與 Enemy.java 中的定義完全一致
     @Override
-    public void update() {
-        // 畫面中央假設是 y = 300。沒到中央就往下走，到了就停下來蓄力射擊
-        if (y < 300) {
+    public Bullet updateBehavior(Castle targetCastle) {
+        // 1. 移動邏輯：如果 Y 小於 250，就往下走
+        if (y < 250) {
             y += speed;
         } else {
-            // 定點蓄力行為
+            // 2. 蓄力攻擊邏輯：到了定點後停下，開始計時
             attackCooldown++;
-            if (attackCooldown >= 120) { // 假設 60 幀為 1 秒，這代表 2 秒射擊一次
-                shootHeavyCannon();
+            // 每 120 幀 (約 2 秒) 發射一次重炮
+            if (attackCooldown >= 120) {
                 attackCooldown = 0;
+                // 發射一顆瞄準主堡的敵方子彈 (高傷害，速度較慢)
+                return new Bullet(
+                        this.x + 15, this.y + 30, // 發射起點：怪物底部
+                        targetCastle.getX() + 40, targetCastle.getY() + 25, // 目標：主堡中心
+                        20, 5.0, true // 傷害 20，速度 5.0，是敵方子彈
+                );
             }
         }
         updateSpritePosition();
-    }
-
-    private void shootHeavyCannon() {
-        System.out.println("遠程怪發射了高傷害重炮！");
-        // TODO: 在 GameLoop 的敵人子彈串列中新增一顆子彈
+        return null; // 沒發射子彈時回傳 null
     }
 }

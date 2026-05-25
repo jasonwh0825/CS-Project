@@ -27,9 +27,9 @@ public class RangedEnemy extends Enemy {
                 attackCooldown = 0;
                 // 發射一顆瞄準主堡的敵方子彈 (高傷害，速度較慢)
                 return new Bullet(
-                        this.x + 15, this.y + 30, // 發射起點：怪物底部
-                        targetCastle.getX() + 40, targetCastle.getY() + 25, // 目標：主堡中心
-                        20, 5.0, true // 傷害 20，速度 5.0，是敵方子彈
+                        this.x + 20, this.y + 20,
+                        targetCastle.getX() + 40, targetCastle.getY(),
+                        10, 5.0, true, Bullet.WeaponType.NORMAL // <== 補上最後這個參數
                 );
             }
         }

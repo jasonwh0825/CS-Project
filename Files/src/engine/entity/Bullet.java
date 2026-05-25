@@ -4,49 +4,52 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
 public class Bullet extends Entity {
+    public enum WeaponType { ELECTRIC, NORMAL }
+
+    private double targetX, targetY;
     private double speed;
     private double damage;
-    private double dirX;
-    private double dirY;
-
-    // 【新增】分辨子彈陣營
     private boolean isEnemyBullet;
+    private WeaponType weaponType;
 
-    public Bullet(double startX, double startY, double targetX, double targetY, double damage, double speed, boolean isEnemyBullet) {
-        // 如果是敵方子彈用紫色，玩家子彈用黃色
-        super(new Circle(5, isEnemyBullet ? Color.PURPLE : Color.YELLOW), startX, startY, 1);
+    // ==========================================
+    // 【新增這兩行】宣告 X 軸與 Y 軸的移動速度
+    // ==========================================
+    private double vx;
+    private double vy;
+
+    public Bullet(double startX, double startY, double targetX, double targetY,
+                  double damage, double speed, boolean isEnemyBullet, WeaponType weaponType) {
+
+        super(new Circle(5, weaponType == WeaponType.ELECTRIC ? Color.CYAN : Color.YELLOW), startX, startY, 1);
+        this.targetX = targetX;
+        this.targetY = targetY;
         this.damage = damage;
         this.speed = speed;
         this.isEnemyBullet = isEnemyBullet;
+        this.weaponType = weaponType;
 
-        this.hpBgBar.setVisible(false);
-        this.hpFgBar.setVisible(false);
-
+        // 計算向量
         double dx = targetX - startX;
         double dy = targetY - startY;
         double distance = Math.sqrt(dx * dx + dy * dy);
-
-        if (distance > 0) {
-            this.dirX = dx / distance;
-            this.dirY = dy / distance;
-        } else {
-            this.dirX = 0;
-            this.dirY = 1; // 預設往下飛
-        }
+        this.vx = (dx / distance) * speed;
+        this.vy = (dy / distance) * speed;
     }
 
     @Override
     public void update() {
-        x += dirX * speed;
-        y += dirY * speed;
+        x += vx;
+        y += vy;
         updateSpritePosition();
 
+        // 超出螢幕判定為死亡
         if (x < 0 || x > 800 || y < 0 || y > 700) {
-            this.isDead = true;
+            takeDamage(999);
         }
     }
 
     public double getDamage() { return damage; }
-    // 【新增】取得子彈陣營
     public boolean isEnemyBullet() { return isEnemyBullet; }
+    public WeaponType getWeaponType() { return weaponType; }
 }

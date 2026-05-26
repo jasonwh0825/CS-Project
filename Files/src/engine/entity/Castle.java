@@ -14,7 +14,7 @@ public class Castle extends Entity {
     private double currentAtkDamage = 15.0;
 
     public Castle(double x, double y, int accountLevel) {
-        super(new Rectangle(80, 50, Color.BLUE), x, y, 100 + (accountLevel * 20));
+        super(new Rectangle(800, 50, Color.BLUE), x, y, 100 + (accountLevel * 20));
     }
 
     // 獲得獎勵：僅增加數值，不觸發升級與加血

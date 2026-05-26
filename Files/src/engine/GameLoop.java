@@ -39,7 +39,7 @@ public class GameLoop extends AnimationTimer {
     }
 
     private void initGame() {
-        this.castle = new Castle(360, 600, accountLevel);
+        this.castle = new Castle(0, 600, accountLevel);
         gamePane.getChildren().add(castle.getSprite());
         isGameOver = false;
         isBossActive = false;
@@ -65,7 +65,7 @@ public class GameLoop extends AnimationTimer {
 
     public void playerShoot(double targetX, double targetY) {
         if (isGameOver) return;
-        Bullet bullet = new Bullet(castle.getX() + 40, castle.getY(), targetX, targetY,
+        Bullet bullet = new Bullet(castle.getX() + 400, castle.getY(), targetX, targetY,
                 castle.getCurrentAtkDamage(), 8.0, false, Bullet.WeaponType.ELECTRIC);
         bullets.add(bullet);
         gamePane.getChildren().add(bullet.getSprite());

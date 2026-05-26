@@ -15,6 +15,8 @@ public class Castle extends Entity {
 
     public Castle(double x, double y, int accountLevel) {
         super(new Rectangle(800, 50, Color.BLUE), x, y, 100 + (accountLevel * 20));
+        hpBar.setVisible(false);
+        hpBarBg.setVisible(false);
     }
 
     // 獲得獎勵：僅增加數值，不觸發升級與加血

@@ -34,7 +34,7 @@ public class BossEnemy extends Enemy {
             // 射向主堡中心
             return new Bullet(
                     this.x + 50, this.y + 100,
-                    targetCastle.getX() + 40, targetCastle.getY(),
+                    this.x, targetCastle.getY(),
                     30, 4.0, true, Bullet.WeaponType.NORMAL // <== 補上最後這個參數
             );
         }

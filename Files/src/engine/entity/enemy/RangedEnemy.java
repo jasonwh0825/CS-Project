@@ -28,7 +28,7 @@ public class RangedEnemy extends Enemy {
                 // 發射一顆瞄準主堡的敵方子彈 (高傷害，速度較慢)
                 return new Bullet(
                         this.x + 20, this.y + 20,
-                        targetCastle.getX() + 40, targetCastle.getY(),
+                        this.x, targetCastle.getY(),
                         10, 5.0, true, Bullet.WeaponType.NORMAL // <== 補上最後這個參數
                 );
             }

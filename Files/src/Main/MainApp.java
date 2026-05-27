@@ -4,12 +4,53 @@ import engine.GameLoop;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
+import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 
 public class MainApp extends Application {
-
+    private Stage primaryStage;
     @Override
     public void start(Stage primaryStage) {
+        this.primaryStage = primaryStage;
+        primaryStage.setTitle("Project");
+        primaryStage.setResizable(false); // 固定視窗大小防止跑版
+        showLoginScene();
+        primaryStage.show();
+    }
+
+
+    public void showLoginScene() {
+        // 這裡你可以建立一個簡單的 VBox 或是載入 login.fxml
+        // 裡面放 TextField (帳號) 和 Button (登入)
+        // 點擊登入後，呼叫 showGameScene()
+        VBox login=new VBox();
+        login.setAlignment(Pos.CENTER);
+
+        Label titleLabel = new Label("歡迎進入遊戲");
+        TextField usernameField = new TextField();
+        usernameField.setPromptText("輸入帳號");
+        usernameField.setMaxWidth(200);
+
+        Button loginButton = new Button("登入");
+        loginButton.setOnAction(e -> {
+                showGameScene();
+        });
+
+        login.getChildren().addAll(titleLabel, usernameField,loginButton);
+
+        Scene loginScene = new Scene(login, 800, 700);
+
+        // 將其顯示在 Stage 上
+        primaryStage.setScene(loginScene);
+    }
+
+    public void showGameScene() {
         // 1. 建立遊戲的戰鬥畫布 (Pane)
         Pane gamePane = new Pane();
         gamePane.setPrefSize(800, 700); // 設定視窗寬 800，高 700
@@ -46,15 +87,11 @@ public class MainApp extends Application {
                     break;
             }
         });
-        primaryStage.setTitle("Project");
-        primaryStage.setScene(scene);
-        primaryStage.setResizable(false); // 固定視窗大小防止跑版
-        primaryStage.show();
 
+        primaryStage.setScene(scene);
         // 4. 正式啟動遊戲主迴圈，怪物會開始往下掉！
         gameLoop.start();
     }
-
     public static void main(String[] args) {
         // JavaFX 的標準啟動指令，它會自動呼叫上面的 start 方法
         launch(args);

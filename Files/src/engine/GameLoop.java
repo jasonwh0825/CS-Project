@@ -15,6 +15,7 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import java.util.ArrayList;
 import java.util.List;
+import engine.entity.WeaponType;
 
 public class GameLoop extends AnimationTimer {
     private Pane gamePane;
@@ -29,6 +30,7 @@ public class GameLoop extends AnimationTimer {
     private int accountLevel;
     private boolean isGameOver = false;
     private boolean isBossActive = false;
+    private WeaponType currentWeapon = WeaponType.NORMAL;
 
     public GameLoop(Pane gamePane, int accountLevel) {
         this.gamePane = gamePane;
@@ -63,10 +65,16 @@ public class GameLoop extends AnimationTimer {
         }
     }
 
+    public void switchWeapon(WeaponType newWeapon) {
+        this.currentWeapon = newWeapon;
+        System.out.println("切換武器：" + newWeapon.getName());
+    }
+
     public void playerShoot(double targetX, double targetY) {
         if (isGameOver) return;
+        // 把最後一個參數換成 currentWeapon
         Bullet bullet = new Bullet(castle.getX() + 400, castle.getY(), targetX, targetY,
-                castle.getCurrentAtkDamage(), 8.0, false, Bullet.WeaponType.ELECTRIC);
+                castle.getCurrentAtkDamage(), 8.0, false, currentWeapon);
         bullets.add(bullet);
         gamePane.getChildren().add(bullet.getSprite());
     }
@@ -132,7 +140,7 @@ public class GameLoop extends AnimationTimer {
                 for (Enemy e : enemies) {
                     if (b.getSprite().getBoundsInParent().intersects(e.getSprite().getBoundsInParent())) {
                         e.takeDamage(b.getDamage());
-                        if (b.getWeaponType() == Bullet.WeaponType.ELECTRIC && Math.random() < 0.3) {
+                        if (b.getWeaponType() == WeaponType.ICE && Math.random() < 0.3) {
                             e.applyStun(15);
                         }
                         b.takeDamage(999);
@@ -150,12 +158,25 @@ public class GameLoop extends AnimationTimer {
     }
 
     private void updateUI() {
-        // UI 移除了 Lv 字樣，僅顯示經驗值與金幣
+        // 利用 \n 讓資訊在側欄垂直整齊排列
         hudLabel.setText(String.format(
-                "金幣: %.0f  |  經驗值: %.0f  |  能量: %.1f%%  |  擊殺: %d  |  HP: %.0f/%.0f",
-                castle.getGold(), castle.getExp(), castle.getUltEnergy(), killCount, castle.getHp(), castle.getMaxHp()
+                "【 基地狀態 】\n\n" +
+                        " 金幣: %.0f g\n\n" +
+                        " 經驗: %.0f exp\n\n" +
+                        " 武器: %s\n\n" +
+                        " 能量: %.1f%%\n\n" +
+                        " 擊殺: %d 隻\n\n" +
+                        " 血量: %.0f / %.0f",
+                castle.getGold(),
+                castle.getExp(),
+                currentWeapon.getName(), // 順便把當前武器名稱接上來！
+                castle.getUltEnergy(),
+                killCount,
+                castle.getHp(),
+                castle.getMaxHp()
         ));
 
+        // 底下的升級按鈕邏輯維持不變
         atkUpgradeBtn.setText(String.format("升級攻擊 (Lv.%d): %.0fg", castle.getAtkLevel(), castle.getAtkUpgradeCost()));
         hpUpgradeBtn.setText(String.format("增加血量 (Lv.%d): %.0fg", castle.getHpLevel(), castle.getHpUpgradeCost()));
         atkUpgradeBtn.setDisable(castle.getGold() < castle.getAtkUpgradeCost());
@@ -170,9 +191,18 @@ public class GameLoop extends AnimationTimer {
     }
 
     private void spawnNormalEnemy() {
-        double rx = Math.random() * 700 + 50;
+        double rx = Math.random() * 650 + 50; // 限制在 50~700 之間
         int type = (int)(Math.random() * 3);
         Enemy e = (type == 0) ? new MeleeEnemy(rx, 0) : (type == 1 ? new RangedEnemy(rx, 0) : new ShamanEnemy(rx, 0));
+
+        // 計算目前是第幾波 (0~19隻是第1波，20~39隻是第2波...)
+        int wave = (killCount / 20) + 1;
+        if (wave > 1) {
+            // 每多一波，小兵屬性增加 50% (例如第 2 波 1.5 倍，第 3 波 2.0 倍)
+            double multiplier = 1.0 + (wave - 1) * 0.5;
+            e.enhanceStats(multiplier);
+        }
+
         enemies.add(e);
         gamePane.getChildren().add(e.getSprite());
     }
@@ -191,25 +221,37 @@ public class GameLoop extends AnimationTimer {
     }
 
     private void initHUD() {
+        Rectangle sidebarBg = new Rectangle(200, 700, Color.web("#2c3e50")); // 深灰色側欄背景
+        sidebarBg.setX(800);
+        gamePane.getChildren().add(sidebarBg);
         hudLabel = new Label();
-        hudLabel.setFont(new Font(16));
-        hudLabel.setTranslateX(20);
-        hudLabel.setTranslateY(20);
+        hudLabel.setFont(new Font(16)); // 16 號字大小剛剛好
+        hudLabel.setTranslateX(815);    // 移到右側側欄起點
+        hudLabel.setTranslateY(20);     // 從上方 20 像素開始往下排
+        hudLabel.setTextFill(Color.WHITE); // 如果你加了深色側欄背景，字體改白色會很清晰
         gamePane.getChildren().add(hudLabel);
     }
 
     private void initUpgradeUI() {
-        upgradePanel = new VBox(10);
-        upgradePanel.setTranslateX(600);
-        upgradePanel.setTranslateY(480);
+        upgradePanel = new VBox(20);
+        upgradePanel.setTranslateX(810);
+        upgradePanel.setTranslateY(350);
+
         atkUpgradeBtn = new Button();
         hpUpgradeBtn = new Button();
         atkUpgradeBtn.setPrefWidth(180);
         hpUpgradeBtn.setPrefWidth(180);
+
         atkUpgradeBtn.setOnAction(e -> castle.upgradeAttack());
         hpUpgradeBtn.setOnAction(e -> castle.upgradeMaxHp());
-        upgradePanel.getChildren().addAll(atkUpgradeBtn, hpUpgradeBtn);
+
+        // 【重點檢查】：確保只有下面這一行在添加按鈕，不要有其他的 addAll 或是 add
+        Label titleLabel = new Label("--- 基地強化 ---");
+        titleLabel.setTextFill(Color.WHITE); // 如果背景是深色，字體可以改白色
+        upgradePanel.getChildren().addAll(titleLabel, atkUpgradeBtn, hpUpgradeBtn);
+
         gamePane.getChildren().add(upgradePanel);
+
         atkUpgradeBtn.setFocusTraversable(false);
         hpUpgradeBtn.setFocusTraversable(false);
     }

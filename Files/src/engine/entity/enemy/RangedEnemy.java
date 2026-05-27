@@ -2,6 +2,7 @@ package engine.entity.enemy;
 
 import engine.entity.Bullet;
 import engine.entity.Castle;
+import engine.entity.WeaponType;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.paint.Color;
 
@@ -29,7 +30,7 @@ public class RangedEnemy extends Enemy {
                 return new Bullet(
                         this.x + 20, this.y + 20,
                         this.x, targetCastle.getY(),
-                        10, 5.0, true, Bullet.WeaponType.NORMAL // <== 補上最後這個參數
+                        10, 5.0, true, WeaponType.NORMAL // <== 補上最後這個參數
                 );
             }
         }

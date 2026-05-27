@@ -2,6 +2,7 @@ package engine.entity.enemy;
 
 import engine.entity.Bullet;
 import engine.entity.Castle;
+import engine.entity.WeaponType;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 
@@ -35,7 +36,7 @@ public class BossEnemy extends Enemy {
             return new Bullet(
                     this.x + 50, this.y + 100,
                     this.x, targetCastle.getY(),
-                    30, 4.0, true, Bullet.WeaponType.NORMAL // <== 補上最後這個參數
+                    30, 4.0, true, WeaponType.NORMAL // <== 補上最後這個參數
             );
         }
         return null;

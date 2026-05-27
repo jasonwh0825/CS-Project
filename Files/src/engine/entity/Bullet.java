@@ -4,7 +4,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 
 public class Bullet extends Entity {
-    public enum WeaponType { ELECTRIC, NORMAL }
+
 
     private double targetX, targetY;
     private double speed;
@@ -12,16 +12,14 @@ public class Bullet extends Entity {
     private boolean isEnemyBullet;
     private WeaponType weaponType;
 
-    // ==========================================
-    // 【新增這兩行】宣告 X 軸與 Y 軸的移動速度
-    // ==========================================
+
     private double vx;
     private double vy;
 
     public Bullet(double startX, double startY, double targetX, double targetY,
                   double damage, double speed, boolean isEnemyBullet, WeaponType weaponType) {
 
-        super(new Circle(5, weaponType == WeaponType.ELECTRIC ? Color.CYAN : Color.YELLOW), startX, startY, 1);
+        super(new Circle(5, weaponType == WeaponType.ICE ? Color.CYAN : Color.YELLOW), startX, startY, 1);
         this.targetX = targetX;
         this.targetY = targetY;
         this.damage = damage;

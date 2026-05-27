@@ -43,4 +43,17 @@ public abstract class Enemy extends Entity {
 
     public double getRewardGold() { return rewardGold; }
     public double getRewardExp() { return rewardExp; }
+
+    public void enhanceStats(double multiplier) {
+        // 血量乘上倍率
+        this.maxHp *= multiplier;
+        this.hp = this.maxHp;
+
+        // 打死後掉落的金幣與經驗也隨之增加，給玩家更多獎勵
+        this.rewardGold *= multiplier;
+        this.rewardExp *= multiplier;
+
+        // 速度只微幅增加（例如倍率多 0.5，速度只多 10%），以免後期怪物快到像閃電
+        this.speed *= (1.0 + (multiplier - 1) * 0.2);
+    }
 }

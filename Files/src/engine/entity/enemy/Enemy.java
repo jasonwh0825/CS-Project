@@ -9,13 +9,15 @@ public abstract class Enemy extends Entity {
     protected double speed;
     protected double rewardGold;
     protected double rewardExp;
+    protected double baseDamage;
     protected int stunTimer = 0;
 
-    public Enemy(Node sprite, double x, double y, double maxHp, double speed, double rewardGold, double rewardExp) {
+    public Enemy(Node sprite, double x, double y, double maxHp, double speed, double rewardGold, double rewardExp , double baseDamage) {
         super(sprite, x, y, maxHp);
         this.speed = speed;
         this.rewardGold = rewardGold;
         this.rewardExp = rewardExp;
+        this.baseDamage = baseDamage;
     }
 
     // ==========================================
@@ -45,15 +47,13 @@ public abstract class Enemy extends Entity {
     public double getRewardExp() { return rewardExp; }
 
     public void enhanceStats(double multiplier) {
-        // 血量乘上倍率
         this.maxHp *= multiplier;
         this.hp = this.maxHp;
-
-        // 打死後掉落的金幣與經驗也隨之增加，給玩家更多獎勵
         this.rewardGold *= multiplier;
         this.rewardExp *= multiplier;
-
-        // 速度只微幅增加（例如倍率多 0.5，速度只多 10%），以免後期怪物快到像閃電
+        this.baseDamage *= multiplier;
         this.speed *= (1.0 + (multiplier - 1) * 0.2);
     }
+
+    public double getBaseDamage() { return baseDamage; }
 }

@@ -31,6 +31,7 @@ public class GameLoop extends AnimationTimer {
     private boolean isGameOver = false;
     private boolean isBossActive = false;
     private WeaponType currentWeapon = WeaponType.NORMAL;
+    private int currentWave = 1;
 
     public GameLoop(Pane gamePane, int accountLevel) {
         this.gamePane = gamePane;
@@ -47,6 +48,7 @@ public class GameLoop extends AnimationTimer {
         isBossActive = false;
         killCount = 0;
         frameCount = 0;
+        this.currentWave= 1;
     }
 
     public void castUltimate() {
@@ -89,6 +91,13 @@ public class GameLoop extends AnimationTimer {
 
         if (!isBossActive && killCount > 0 && killCount % 20 == 0) {
             spawnBoss();
+            Rectangle waveFlash = new Rectangle(800, 700, Color.RED);
+            waveFlash.setOpacity(0.3);
+            gamePane.getChildren().add(waveFlash);
+            new Thread(() -> {
+                try { Thread.sleep(200); } catch (InterruptedException ex) {}
+                Platform.runLater(() -> gamePane.getChildren().remove(waveFlash));
+            }).start();
         } else if (!isBossActive && frameCount % 100 == 0) {
             spawnNormalEnemy();
         }
@@ -103,12 +112,26 @@ public class GameLoop extends AnimationTimer {
             Enemy e = enemies.get(i);
             if (e.isDead() || e.getY() >= castle.getY() - 20) {
                 if (e.getY() >= castle.getY() - 20) {
-                    castle.takeDamage(10);
+                    castle.takeDamage(e.getBaseDamage());
                 } else {
                     killCount++;
                     castle.addReward(e.getRewardGold(), e.getRewardExp()); // 正常給予獎勵
                 }
-                if (e instanceof BossEnemy) isBossActive = false;
+
+                if (e instanceof BossEnemy) {
+                    isBossActive = false;
+                    currentWave++; // 【關鍵】打完 BOSS，正式進入下一波！
+
+                    // 【特效】通關閃爍金光，提示玩家進入下一波
+                    Rectangle waveFlash = new Rectangle(1000, 700, Color.GOLD);
+                    waveFlash.setOpacity(0.4);
+                    gamePane.getChildren().add(waveFlash);
+                    new Thread(() -> {
+                        try { Thread.sleep(200); } catch (InterruptedException ex) {}
+                        Platform.runLater(() -> gamePane.getChildren().remove(waveFlash));
+                    }).start();
+                }
+
                 removeEnemy(i);
                 checkGameOver();
                 continue;
@@ -158,54 +181,67 @@ public class GameLoop extends AnimationTimer {
     }
 
     private void updateUI() {
-        // 利用 \n 讓資訊在側欄垂直整齊排列
+        // 計算目前的難度倍率
+        double difficulty = 1.0 + (currentWave - 1) * 0.5;
+
+        // 確保包含了：波數、難度、金幣、經驗、能量、武器、擊殺、HP
         hudLabel.setText(String.format(
-                "【 基地狀態 】\n\n" +
+                "【 第 %d 波 】\n" +
+                        " 難度: %.1f 倍\n\n" +
                         " 金幣: %.0f g\n\n" +
-                        " 經驗: %.0f exp\n\n" +
-                        " 武器: %s\n\n" +
+                        " 經驗: %.0f exp\n\n" +  // <-- 經驗值回來了！
                         " 能量: %.1f%%\n\n" +
+                        " 武器: %s\n\n" +
                         " 擊殺: %d 隻\n\n" +
                         " 血量: %.0f / %.0f",
+                currentWave,
+                difficulty,
                 castle.getGold(),
-                castle.getExp(),
-                currentWeapon.getName(), // 順便把當前武器名稱接上來！
+                castle.getExp(),        // 對應 castle.getExp()
                 castle.getUltEnergy(),
+                currentWeapon.getName(),
                 killCount,
                 castle.getHp(),
                 castle.getMaxHp()
         ));
 
-        // 底下的升級按鈕邏輯維持不變
+        // 升級按鈕邏輯保持不變
         atkUpgradeBtn.setText(String.format("升級攻擊 (Lv.%d): %.0fg", castle.getAtkLevel(), castle.getAtkUpgradeCost()));
         hpUpgradeBtn.setText(String.format("增加血量 (Lv.%d): %.0fg", castle.getHpLevel(), castle.getHpUpgradeCost()));
         atkUpgradeBtn.setDisable(castle.getGold() < castle.getAtkUpgradeCost());
         hpUpgradeBtn.setDisable(castle.getGold() < castle.getHpUpgradeCost());
     }
 
-    private void spawnBoss() {
-        isBossActive = true;
-        BossEnemy boss = new BossEnemy(350, -100);
-        enemies.add(boss);
-        gamePane.getChildren().add(boss.getSprite());
-    }
-
     private void spawnNormalEnemy() {
-        double rx = Math.random() * 650 + 50; // 限制在 50~700 之間
+        double rx = Math.random() * 650 + 50;
         int type = (int)(Math.random() * 3);
         Enemy e = (type == 0) ? new MeleeEnemy(rx, 0) : (type == 1 ? new RangedEnemy(rx, 0) : new ShamanEnemy(rx, 0));
 
-        // 計算目前是第幾波 (0~19隻是第1波，20~39隻是第2波...)
-        int wave = (killCount / 20) + 1;
-        if (wave > 1) {
-            // 每多一波，小兵屬性增加 50% (例如第 2 波 1.5 倍，第 3 波 2.0 倍)
-            double multiplier = 1.0 + (wave - 1) * 0.5;
+        // 直接使用 currentWave 來計算強度
+        if (currentWave > 1) {
+            double multiplier = 1.0 + (currentWave - 1) * 0.5;
             e.enhanceStats(multiplier);
         }
 
         enemies.add(e);
         gamePane.getChildren().add(e.getSprite());
     }
+
+    private void spawnBoss() {
+        isBossActive = true;
+        BossEnemy boss = new BossEnemy(350, -100);
+
+        // 第一個 BOSS 出現時 currentWave 還是 1，所以會是正常的基礎強度！
+        if (currentWave > 1) {
+            double multiplier = 1.0 + (currentWave - 1) * 0.8;
+            boss.enhanceStats(multiplier);
+        }
+
+        enemies.add(boss);
+        gamePane.getChildren().add(boss.getSprite());
+    }
+
+
 
     private void removeEnemy(int index) {
         gamePane.getChildren().remove(enemies.get(index).getSprite());

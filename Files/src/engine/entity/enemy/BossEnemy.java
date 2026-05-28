@@ -12,7 +12,7 @@ public class BossEnemy extends Enemy {
 
     public BossEnemy(double x, double y) {
         // 體型 100x100，血量 500，速度極慢 0.5，獎勵 500g
-        super(new Rectangle(100, 100, Color.DARKRED), x, y, 500, 0.5, 500, 200);
+        super(new Rectangle(100, 100, Color.DARKRED), x, y, 500, 0.5, 500, 200 ,30);
     }
 
     @Override
@@ -36,7 +36,7 @@ public class BossEnemy extends Enemy {
             return new Bullet(
                     this.x + 50, this.y + 100,
                     this.x, targetCastle.getY(),
-                    30, 4.0, true, WeaponType.NORMAL // <== 補上最後這個參數
+                    this.baseDamage, 4.0, true, WeaponType.NORMAL // <== 補上最後這個參數
             );
         }
         return null;

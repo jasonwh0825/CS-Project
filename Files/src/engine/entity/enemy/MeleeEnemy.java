@@ -10,7 +10,7 @@ public class MeleeEnemy extends Enemy {
     private double angle = 0;
 
     public MeleeEnemy(double x, double y) {
-        super(new Circle(15, Color.RED), x, y, 30, 2.5, 10, 15);
+        super(new Circle(15, Color.RED), x, y, 30, 2.5, 10, 15 ,10);
     }
 
     @Override

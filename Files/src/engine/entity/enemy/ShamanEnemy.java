@@ -11,7 +11,7 @@ public class ShamanEnemy extends Enemy {
 
     public ShamanEnemy(double x, double y) {
         // 藍色三角形代表薩滿，速度慢(1.0)，血量較高(60)
-        super(createTriangle(), x, y, 60, 1.0, 30, 30);
+        super(createTriangle(), x, y, 60, 1.0, 30, 30 , 10);
     }
 
     // 建立三角形外觀

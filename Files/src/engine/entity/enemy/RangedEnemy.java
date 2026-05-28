@@ -11,7 +11,7 @@ public class RangedEnemy extends Enemy {
 
     public RangedEnemy(double x, double y) {
         // 綠色方形，速度中等(1.2)，血量(50)
-        super(new Rectangle(30, 30, Color.GREEN), x, y, 50, 1.2, 20, 25);
+        super(new Rectangle(30, 30, Color.GREEN), x, y, 50, 1.2, 20, 25 , 10);
     }
 
     // 就是這個方法！必須與 Enemy.java 中的定義完全一致
@@ -30,7 +30,7 @@ public class RangedEnemy extends Enemy {
                 return new Bullet(
                         this.x + 20, this.y + 20,
                         this.x, targetCastle.getY(),
-                        10, 5.0, true, WeaponType.NORMAL // <== 補上最後這個參數
+                        this.baseDamage, 5.0, true, WeaponType.NORMAL // <== 補上最後這個參數
                 );
             }
         }

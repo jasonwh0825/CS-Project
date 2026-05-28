@@ -14,6 +14,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import engine.entity.WeaponType;
 
+
 public class MainApp extends Application {
     private Stage primaryStage;
     @Override
@@ -21,11 +22,12 @@ public class MainApp extends Application {
         this.primaryStage = primaryStage;
         primaryStage.setTitle("Project");
         primaryStage.setResizable(false); // 固定視窗大小防止跑版
-        showLoginScene();
+        // showLoginScene();
         primaryStage.show();
+        showGameScene();
     }
 
-
+/*
     public void showLoginScene() {
         // 這裡你可以建立一個簡單的 VBox 或是載入 login.fxml
         // 裡面放 TextField (帳號) 和 Button (登入)
@@ -50,6 +52,7 @@ public class MainApp extends Application {
         // 將其顯示在 Stage 上
         primaryStage.setScene(loginScene);
     }
+*/
 
     public void showGameScene() {
         // 1. 建立遊戲的戰鬥畫布 (Pane)

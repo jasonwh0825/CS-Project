@@ -19,7 +19,11 @@ public class Bullet extends Entity {
     public Bullet(double startX, double startY, double targetX, double targetY,
                   double damage, double speed, boolean isEnemyBullet, WeaponType weaponType) {
 
-        super(new Circle(5, weaponType == WeaponType.ICE ? Color.CYAN : Color.YELLOW), startX, startY, 1);
+
+        super(new Circle(weaponType == WeaponType.HEAVY ? 10 : 5,
+                        weaponType == WeaponType.HEAVY ? Color.DARKSLATEGRAY :
+                                (weaponType == WeaponType.ICE ? Color.CYAN : Color.YELLOW)),
+                startX, startY, 1);
         this.targetX = targetX;
         this.targetY = targetY;
         this.damage = damage;
@@ -33,6 +37,8 @@ public class Bullet extends Entity {
         double distance = Math.sqrt(dx * dx + dy * dy);
         this.vx = (dx / distance) * speed;
         this.vy = (dy / distance) * speed;
+
+
     }
 
     @Override

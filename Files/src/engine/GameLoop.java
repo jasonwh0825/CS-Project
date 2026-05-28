@@ -162,10 +162,29 @@ public class GameLoop extends AnimationTimer {
             if (!b.isEnemyBullet()) {
                 for (Enemy e : enemies) {
                     if (b.getSprite().getBoundsInParent().intersects(e.getSprite().getBoundsInParent())) {
+                        // 1. 造成傷害
                         e.takeDamage(b.getDamage());
+
+                        // 2. 處理武器特殊效果
                         if (b.getWeaponType() == WeaponType.ICE && Math.random() < 0.3) {
+                            // 冰凍效果：麻痺 15 幀
                             e.applyStun(15);
                         }
+                        else if (b.getWeaponType() == WeaponType.HEAVY) {
+                            // 【擊退重砲效果】：將敵人往上推 30 像素
+                            // 減去 Y 值代表往螢幕上方移動（退回出發點）
+                            e.setY(e.getY() - 30);
+
+                            // 為了視覺流暢，立即更新圖案位置
+                            e.updateSpritePosition();
+
+                            // 額外小細節：如果是 BOSS，擊退距離減半，增加重量感
+                            if (e instanceof BossEnemy) {
+                                e.setY(e.getY() + 15); // 把剛才減的 30 補回 15，變成只退 15
+                            }
+                        }
+
+                        // 3. 子彈撞擊後消失
                         b.takeDamage(999);
                         break;
                     }

@@ -16,6 +16,18 @@ public abstract class Entity {
     protected Rectangle hpBar;
     protected Rectangle hpBarBg;
 
+    // 在 Entity.java 裡面加入
+    public void setY(double y) {
+        this.y = y;
+        // 重要：設定完座標後，要同步更新圖案(Sprite)的位置
+        updateSpritePosition();
+    }
+
+    public void setX(double x) {
+        this.x = x;
+        updateSpritePosition();
+    }
+
     public Entity(Node sprite, double x, double y, double maxHp) {
         this.sprite = sprite;
         this.x = x;
@@ -44,7 +56,7 @@ public abstract class Entity {
         }
     }
 
-    protected void updateSpritePosition() {
+    public void updateSpritePosition() {
         container.setTranslateX(x);
         container.setTranslateY(y);
     }

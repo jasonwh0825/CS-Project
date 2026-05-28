@@ -3,7 +3,7 @@ package engine.entity;
 public enum WeaponType {
     NORMAL("普通機槍", 15, "全螢幕彈幕"),
     ICE("冰凍雷電", 10, "全場敵人緩速 5 秒"),
-    HEAVY("擊退重炮", 40, "強力震盪波（全場擊退）");
+    HEAVY("擊退重炮", 10, "強力震盪波（全場擊退）");
 
     private final String name;
     private final double baseDamage;

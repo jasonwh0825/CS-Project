@@ -37,7 +37,7 @@ public class ShamanEnemy extends Enemy {
 
             for (Enemy e : allEnemies) {
                 // 不補自己，且不補已經死的
-                if (e == this || e.isDead()) continue;
+                if (e == this || e.isDead() || ((e.getHp()/e.getMaxHp())>=1)) continue;
 
                 // 計算兩者之間的距離
                 double dx = e.getX() - this.x;
@@ -47,8 +47,15 @@ public class ShamanEnemy extends Enemy {
                 // 補血範圍：150 像素
                 if (distance <= 150) {
                     // 呼叫 takeDamage 傳入負值即為補血
+                    if(e.getHp()+20>e.getMaxHp())
+                    {
+                        e.takeDamage(e.getHp()-e.getMaxHp());
+                    }
+                    else
+                    {
                     e.takeDamage(-20);
                     System.out.println("薩滿補血！目標距離: " + (int)distance);
+                    }
                 }
             }
         }

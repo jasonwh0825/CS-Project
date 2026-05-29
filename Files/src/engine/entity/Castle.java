@@ -2,6 +2,7 @@ package engine.entity;
 
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import engine.GameLoop;
 
 public class Castle extends Entity {
     private double gold = 0;
@@ -11,7 +12,7 @@ public class Castle extends Entity {
 
     private int atkLevel = 1;
     private int hpLevel = 1;
-    private double currentAtkDamage = 15.0;
+    public double currentAtkDamage = 15.0;
 
     public Castle(double x, double y, int accountLevel) {
         super(new Rectangle(800, 50, Color.BLUE), x, y, 100 + (accountLevel * 20));
@@ -41,7 +42,7 @@ public class Castle extends Entity {
         if (gold >= cost) {
             gold -= cost;
             atkLevel++;
-            currentAtkDamage += 5.0;
+            currentAtkDamage += 15;
             return true;
         }
         return false;
@@ -52,7 +53,7 @@ public class Castle extends Entity {
         if (gold >= cost) {
             gold -= cost;
             hpLevel++;
-            maxHp += 100;
+            maxHp *= 1.3;
             hp = maxHp; // 商店購買才回滿血
             return true;
         }

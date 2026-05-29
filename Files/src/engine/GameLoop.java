@@ -22,7 +22,7 @@ import javafx.util.Duration;
 
 public class GameLoop extends AnimationTimer {
     private Pane gamePane;
-    private Castle castle;
+    public Castle castle;
     private List<Enemy> enemies = new ArrayList<>();
     private List<Bullet> bullets = new ArrayList<>();
     private Label hudLabel;
@@ -65,9 +65,17 @@ public class GameLoop extends AnimationTimer {
             Platform.runLater(() -> gamePane.getChildren().remove(flash));
         }).start();
         for (Enemy e : enemies) {
-            e.takeDamage(80);
+            e.takeDamage(80+castle.currentAtkDamage*6);
             e.applyStun(120);
         }
+    }
+
+    public void atklevelup(){
+        castle.upgradeAttack();
+    }
+
+    public void hplevelup(){
+        castle.upgradeMaxHp();
     }
 
     public void switchWeapon(WeaponType newWeapon) {
@@ -174,17 +182,13 @@ public class GameLoop extends AnimationTimer {
                             e.applyStun(15);
                         }
 
-                        else if (b.getWeaponType() == WeaponType.HEAVY) {
+                        else if (b.getWeaponType() == WeaponType.HEAVY && Math.random() < 0.2) {
                             // 【擊退重砲效果】：將敵人往上推 30 像素
                             // 減去 Y 值代表往螢幕上方移動（退回出發點）
-                            Timeline y=new Timeline(new KeyFrame(Duration.seconds(0.01), event->{e.setY(e.getY()-1);
-                            }
-                            ));
+                            Timeline y=new Timeline(new KeyFrame(Duration.seconds(0.01), event->{e.setY(e.getY()-1);}));
                             y.setCycleCount(30);
                             y.play();
-                            Timeline x=new Timeline(new KeyFrame(Duration.seconds(0.01), event->{e.setY(e.getY());
-                            }
-                            ));
+                            Timeline x=new Timeline(new KeyFrame(Duration.seconds(0.01), event->{e.setY(e.getY());}));
                             x.setCycleCount(10);
                             x.play();
 

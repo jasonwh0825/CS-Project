@@ -1,8 +1,10 @@
 package Main;
 
 import engine.GameLoop;
+import engine.entity.Castle;
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
@@ -85,6 +87,12 @@ public class MainApp extends Application {
                     break;
                 case DIGIT3: // 按下鍵盤 3
                     gameLoop.switchWeapon(WeaponType.HEAVY);
+                    break;
+                case KeyCode.Q:
+                    gameLoop.atklevelup();
+                    break;
+                case KeyCode.E:
+                    gameLoop.hplevelup();
                     break;
             }
         });

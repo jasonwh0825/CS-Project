@@ -123,17 +123,27 @@ public class GameLoop extends AnimationTimer {
     private void updateEnemies() {
         for (int i = enemies.size() - 1; i >= 0; i--) {
             Enemy e = enemies.get(i);
+
+            // 1. 每幀更新怪物的緩速狀態計時器
+            e.updateSlow();
+
+            // 2. 判斷死亡或是碰到主堡
             if (e.isDead() || e.getY() >= castle.getY() - 20) {
                 if (e.getY() >= castle.getY() - 20) {
+                    // 怪物撞到主堡，主堡扣除對應攻擊力的血量
                     castle.takeDamage(e.getBaseDamage());
                 } else {
+                    // 怪物被擊殺
                     killCount++;
-                    castle.addReward(e.getRewardGold(), e.getRewardExp());// 正常給予獎勵
-                    if(currentWeapon.getName() == HEAL.getName() && castle.getHp()+10<=castle.getMaxHp()){
-                        castle.takeDamage(-5*castle.getAtkLevel());
+                    castle.addReward(e.getRewardGold(), e.getRewardExp()); // 正常給予獎勵
+
+                    // 【修正】直接比對 Enum，且確認血量未滿時才補血
+                    if (currentWeapon == WeaponType.HEAL && castle.getHp() < castle.getMaxHp()) {
+                        castle.takeDamage(-5 * castle.getAtkLevel()); // 補血邏輯
                     }
                 }
 
+                // 3. 處理 BOSS 死亡與波數推進特效
                 if (e instanceof BossEnemy) {
                     isBossActive = false;
                     currentWave++; // 【關鍵】打完 BOSS，正式進入下一波！
@@ -148,20 +158,27 @@ public class GameLoop extends AnimationTimer {
                     }).start();
                 }
 
+                // 移除死亡的怪物
                 removeEnemy(i);
                 checkGameOver();
                 continue;
             }
 
+            // 4. 處理存活怪物的行動 (麻痺優先，否則正常移動攻擊)
             if (e.isStunned()) {
                 e.updateStun();
             } else {
+                // 這裡會呼叫 e.updateBehavior()，子類別裡的速度請配合 isSlowed() 來減速
                 Bullet eb = e.updateBehavior(castle);
                 if (eb != null) {
                     bullets.add(eb);
                     gamePane.getChildren().add(eb.getSprite());
                 }
-                if (e instanceof ShamanEnemy) ((ShamanEnemy) e).castHeal(enemies);
+
+                // 薩滿補血技能
+                if (e instanceof ShamanEnemy) {
+                    ((ShamanEnemy) e).castHeal(enemies);
+                }
             }
         }
     }
@@ -182,34 +199,34 @@ public class GameLoop extends AnimationTimer {
                         e.takeDamage(b.getDamage());
 
                         // 2. 處理武器特殊效果
-                        if (b.getWeaponType() == ICE && Math.random() < 0.3) {
-
-                            if (e instanceof BossEnemy) {
-                                continue;
-                            }
-
-                            e.applyStun(15);// 冰凍效果：麻痺 15 幀
-
-
+                        if (e instanceof BossEnemy) {
+                            continue;
                         }
-
-                        else if (b.getWeaponType() == HEAVY && Math.random() < 0.2) {
-
-                            if (e instanceof BossEnemy) {
-                                continue;
-                            }
+                        if (b.getWeaponType() == ICE && Math.random() < 0.3) {
+                            e.applyStun(15);// 冰凍效果：麻痺 15 幀
+                        } else if (b.getWeaponType() == HEAVY && Math.random() < 0.2) {
                             Timeline y=new Timeline(new KeyFrame(Duration.seconds(0.01), event->{e.setY(e.getY()-1);}));
                             y.setCycleCount(30);
                             y.play();
                             Timeline x=new Timeline(new KeyFrame(Duration.seconds(0.01), event->{e.setY(e.getY());}));
                             x.setCycleCount(10);
                             x.play();
+                            e.updateSpritePosition();// 為了視覺流暢，立即更新圖案位置
+                        } else if (b.getWeaponType() == FIRE) {
+                            Timeline y=new Timeline(new KeyFrame(Duration.seconds(1), event->{e.takeDamage(castle.getAtkLevel()*5);}));
+                            y.setCycleCount(2);
+                            y.play();
+                        } else if (b.getWeaponType() == SPEED_DOWN){
+                            e.applySlow(120);
 
-                            // 為了視覺流暢，立即更新圖案位置
-                            e.updateSpritePosition();
+                            // 視覺回饋：可以讓怪物的透明度變低或變色，讓玩家知道他被緩速了
+                            e.getSprite().setOpacity(0.5);
 
-
-
+                            // 建立一個兩秒後恢復顏色的計時器
+                            Timeline recoverColor = new Timeline(new KeyFrame(Duration.seconds(2), event -> {
+                                e.getSprite().setOpacity(1.0);
+                            }));
+                            recoverColor.play();
                         }
 
                         // 3. 子彈撞擊後消失

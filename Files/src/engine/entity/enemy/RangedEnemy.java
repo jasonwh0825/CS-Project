@@ -17,24 +17,34 @@ public class RangedEnemy extends Enemy {
     // 就是這個方法！必須與 Enemy.java 中的定義完全一致
     @Override
     public Bullet updateBehavior(Castle targetCastle) {
-        // 1. 移動邏輯：如果 Y 小於 250，就往下走
+        // 1. 取得實際速度
+        double currentSpeed = getActualSpeed();
+
+        // 2. 移動邏輯：改用 currentSpeed
         if (y < 250) {
-            y += speed;
+            y += currentSpeed;
         } else {
-            // 2. 蓄力攻擊邏輯：到了定點後停下，開始計時
+            // 3. 蓄力攻擊邏輯
+            // 如果你希望「緩速」也影響「攻速」，可以根據速度倍率來增加冷卻值
+            // 如果被緩速（假設倍率 0.5），每一幀只加 0.5，攻速就會變慢一倍
+            double slowFactor = currentSpeed / speed;
+
+            // 注意：因為 attackCooldown 是 int，我們要轉型處理
+            // 或者簡單點：只有在隨機機率下才增加，或是乾脆保持原樣
             attackCooldown++;
+
             // 每 120 幀 (約 2 秒) 發射一次重炮
             if (attackCooldown >= 120) {
                 attackCooldown = 0;
-                // 發射一顆瞄準主堡的敵方子彈 (高傷害，速度較慢)
+                // 發射子彈，傷害使用已經被 enhanceStats 強化過的 baseDamage
                 return new Bullet(
-                        this.x + 20, this.y + 20,
-                        this.x, targetCastle.getY(),
-                        this.baseDamage, 5.0, true, WeaponType.NORMAL // <== 補上最後這個參數
+                        this.x + 15, this.y + 30, // 調整一下槍口位置
+                        this.x + 15, targetCastle.getY(),
+                        this.baseDamage, 5.0, true, WeaponType.NORMAL
                 );
             }
         }
         updateSpritePosition();
-        return null; // 沒發射子彈時回傳 null
+        return null;
     }
 }

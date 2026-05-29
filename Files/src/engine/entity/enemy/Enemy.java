@@ -11,6 +11,8 @@ public abstract class Enemy extends Entity {
     protected double rewardExp;
     protected double baseDamage;
     protected int stunTimer = 0;
+    private double speedMultiplier = 1.0;
+    private int slowTimer = 0;
 
     public Enemy(Node sprite, double x, double y, double maxHp, double speed, double rewardGold, double rewardExp , double baseDamage) {
         super(sprite, x, y, maxHp);
@@ -56,4 +58,23 @@ public abstract class Enemy extends Entity {
     }
 
     public double getBaseDamage() { return baseDamage; }
+
+    public void updateSlow() {
+        if (slowTimer > 0) {
+            slowTimer--;
+            speedMultiplier = 0.5; // 減速 1/2
+        } else {
+            speedMultiplier = 1.0; // 恢復正常
+        }
+    }
+
+    // 讓子彈呼叫的方法
+    public void applySlow(int frames) {
+        this.slowTimer = frames;
+    }
+
+    // 取得實際速度的方法
+    public double getActualSpeed() {
+        return speed * speedMultiplier;
+    }
 }

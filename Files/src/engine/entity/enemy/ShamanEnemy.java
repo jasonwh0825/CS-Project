@@ -24,38 +24,40 @@ public class ShamanEnemy extends Enemy {
 
     @Override
     public Bullet updateBehavior(Castle targetCastle) {
-        y += speed; // 緩慢往下走
+        // 1. 修正：改用 getActualSpeed()，否則緩速槍對它無效
+        y += getActualSpeed();
         updateSpritePosition();
-        return null; // 薩滿不發射子彈
+        return null;
     }
 
-    // 範圍補血邏輯：由 GameLoop 每幀呼叫並傳入當前所有敵人清單
     public void castHeal(List<Enemy> allEnemies) {
+        // 2. 進階：如果你希望緩速也能影響薩滿的補血頻率
+        // 可以改用 healCooldown += (isSlowed() ? 0.5 : 1); (需將 cooldown 改為 double)
         healCooldown++;
-        if (healCooldown >= 180) { // 約 3 秒一次 (60fps * 3)
+
+        if (healCooldown >= 180) {
             healCooldown = 0;
 
             for (Enemy e : allEnemies) {
-                // 不補自己，且不補已經死的
-                if (e == this || e.isDead() || ((e.getHp()/e.getMaxHp())>=1)) continue;
+                // 不補自己，且不補已經死的，也不補滿血的
+                if (e == this || e.isDead() || e.getHp() >= e.getMaxHp()) continue;
 
-                // 計算兩者之間的距離
                 double dx = e.getX() - this.x;
                 double dy = e.getY() - this.y;
                 double distance = Math.sqrt(dx * dx + dy * dy);
 
-                // 補血範圍：150 像素
                 if (distance <= 150) {
-                    // 呼叫 takeDamage 傳入負值即為補血
-                    if(e.getHp()+20>e.getMaxHp())
-                    {
-                        e.takeDamage(e.getHp()-e.getMaxHp());
+                    // 3. 修正補血邏輯：
+                    // 原本的 e.getHp()-e.getMaxHp() 會得到負數，傳進 takeDamage(-負數) 會變成扣血！
+                    // 我們改成直接判斷：
+                    double healAmount = 20;
+                    if (e.getHp() + healAmount > e.getMaxHp()) {
+                        // 如果補下去會爆表，就只補到滿
+                        e.takeDamage(-(e.getMaxHp() - e.getHp()));
+                    } else {
+                        e.takeDamage(-healAmount);
                     }
-                    else
-                    {
-                    e.takeDamage(-20);
-                    System.out.println("薩滿補血！目標距離: " + (int)distance);
-                    }
+                    System.out.println("薩滿補血！目標: " + e.getClass().getSimpleName());
                 }
             }
         }

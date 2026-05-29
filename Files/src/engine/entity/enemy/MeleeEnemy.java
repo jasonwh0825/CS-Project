@@ -15,22 +15,24 @@ public class MeleeEnemy extends Enemy {
 
     @Override
     public Bullet updateBehavior(Castle targetCastle) {
-        y += speed;
-        angle += 0.1;
+        // 1. 取得當前實際速度 (考慮了減速與強化)
+        double currentSpeed = getActualSpeed();
 
-        // 1. 先計算蛇行位移
-        x += Math.sin(angle) * 3;
+        // 2. 更新垂直位移
+        y += currentSpeed;
 
-        // 2. 限制 X 座標範圍 (防止超出 0 ~ 800 戰場區)
-        // 近戰怪半徑是 15，所以我們留一點空間
-        if (x < 0) {
-            x = 0;
-        }
-        if (x > 770) { // 800 寬度 - 怪物寬度 30
-            x = 770;
-        }
+        // 3. 更新蛇行角度
+        // 如果想要更細緻，角度增加的速度也可以乘以倍率，讓擺動也變慢
+        angle += 0.1 * (currentSpeed / speed);
+
+        // 4. 計算蛇行位移 (原本的 3 也乘以倍率)
+        x += Math.sin(angle) * (3 * (currentSpeed / speed));
+
+        // 5. 限制 X 座標範圍 (防止超出 800 戰場區)
+        if (x < 0) x = 0;
+        if (x > 770) x = 770;
 
         updateSpritePosition();
-        return null; // 近戰怪不發射子彈
+        return null;
     }
 }

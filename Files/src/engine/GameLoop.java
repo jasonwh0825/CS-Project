@@ -130,7 +130,7 @@ public class GameLoop extends AnimationTimer {
                     killCount++;
                     castle.addReward(e.getRewardGold(), e.getRewardExp());// 正常給予獎勵
                     if(currentWeapon.getName() == HEAL.getName() && castle.getHp()+10<=castle.getMaxHp()){
-                        castle.takeDamage(-5*currentWave);
+                        castle.takeDamage(-5*castle.getAtkLevel());
                     }
                 }
 

@@ -20,9 +20,12 @@ public class Bullet extends Entity {
                   double damage, double speed, boolean isEnemyBullet, WeaponType weaponType) {
 
 
-        super(new Circle(weaponType == WeaponType.HEAVY ? 10 : 5,
+        super(new Circle(weaponType == WeaponType.HEAVY ? 7 : 5,
                         weaponType == WeaponType.HEAVY ? Color.DARKSLATEGRAY :
-                                (weaponType == WeaponType.ICE ? Color.CYAN : Color.YELLOW)),
+                                (weaponType == WeaponType.ICE ? Color.CYAN :
+                                        (weaponType==WeaponType.HEAL ? Color.GREEN :
+                                                (weaponType==WeaponType.FIRE ? Color.RED :
+                                                        (weaponType==WeaponType.SPEED_DOWN ? Color.PURPLE:Color.YELLOW))))),
                 startX, startY, 1);
         this.targetX = targetX;
         this.targetY = targetY;

@@ -12,7 +12,7 @@ public class Castle extends Entity {
 
     private int atkLevel = 1;
     private int hpLevel = 1;
-    public double currentAtkDamage = 15.0;
+    public double currentAtkDamage = 0.0; //現在這是增加量
 
     public Castle(double x, double y, int accountLevel) {
         super(new Rectangle(800, 50, Color.BLUE), x, y, 100 + (accountLevel * 20));
@@ -53,7 +53,7 @@ public class Castle extends Entity {
         if (gold >= cost) {
             gold -= cost;
             hpLevel++;
-            maxHp *= 1.3;
+            maxHp = Math.floor((maxHp*1.3)/10)*10;
             hp = maxHp; // 商店購買才回滿血
             return true;
         }

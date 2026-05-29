@@ -20,6 +20,8 @@ import java.util.List;
 import engine.entity.WeaponType;
 import javafx.util.Duration;
 
+import static engine.entity.WeaponType.*;
+
 public class GameLoop extends AnimationTimer {
     private Pane gamePane;
     public Castle castle;
@@ -33,7 +35,7 @@ public class GameLoop extends AnimationTimer {
     private int accountLevel;
     private boolean isGameOver = false;
     private boolean isBossActive = false;
-    private WeaponType currentWeapon = WeaponType.NORMAL;
+    private WeaponType currentWeapon = NORMAL;
     private int currentWave = 1;
 
     public GameLoop(Pane gamePane, int accountLevel) {
@@ -87,7 +89,7 @@ public class GameLoop extends AnimationTimer {
         if (isGameOver) return;
         // 把最後一個參數換成 currentWeapon
         Bullet bullet = new Bullet(castle.getX() + 400, castle.getY(), targetX, targetY,
-                castle.getCurrentAtkDamage(), 8.0, false, currentWeapon);
+                castle.getCurrentAtkDamage() + currentWeapon.getBaseDamage(), 8.0, false, currentWeapon);
         bullets.add(bullet);
         gamePane.getChildren().add(bullet.getSprite());
     }
@@ -126,7 +128,10 @@ public class GameLoop extends AnimationTimer {
                     castle.takeDamage(e.getBaseDamage());
                 } else {
                     killCount++;
-                    castle.addReward(e.getRewardGold(), e.getRewardExp()); // 正常給予獎勵
+                    castle.addReward(e.getRewardGold(), e.getRewardExp());// 正常給予獎勵
+                    if(currentWeapon.getName() == HEAL.getName() && castle.getHp()+10<=castle.getMaxHp()){
+                        castle.takeDamage(-5*currentWave);
+                    }
                 }
 
                 if (e instanceof BossEnemy) {
@@ -177,14 +182,22 @@ public class GameLoop extends AnimationTimer {
                         e.takeDamage(b.getDamage());
 
                         // 2. 處理武器特殊效果
-                        if (b.getWeaponType() == WeaponType.ICE && Math.random() < 0.3) {
-                            // 冰凍效果：麻痺 15 幀
-                            e.applyStun(15);
+                        if (b.getWeaponType() == ICE && Math.random() < 0.3) {
+
+                            if (e instanceof BossEnemy) {
+                                continue;
+                            }
+
+                            e.applyStun(15);// 冰凍效果：麻痺 15 幀
+
+
                         }
 
-                        else if (b.getWeaponType() == WeaponType.HEAVY && Math.random() < 0.2) {
-                            // 【擊退重砲效果】：將敵人往上推 30 像素
-                            // 減去 Y 值代表往螢幕上方移動（退回出發點）
+                        else if (b.getWeaponType() == HEAVY && Math.random() < 0.2) {
+
+                            if (e instanceof BossEnemy) {
+                                continue;
+                            }
                             Timeline y=new Timeline(new KeyFrame(Duration.seconds(0.01), event->{e.setY(e.getY()-1);}));
                             y.setCycleCount(30);
                             y.play();
@@ -192,14 +205,11 @@ public class GameLoop extends AnimationTimer {
                             x.setCycleCount(10);
                             x.play();
 
-
                             // 為了視覺流暢，立即更新圖案位置
                             e.updateSpritePosition();
 
-                            // 額外小細節：如果是 BOSS，擊退距離減半，增加重量感
-                            if (e instanceof BossEnemy) {
-                                e.setY(e.getY() + 15); // 把剛才減的 30 補回 15，變成只退 15
-                            }
+
+
                         }
 
                         // 3. 子彈撞擊後消失

@@ -88,6 +88,15 @@ public class MainApp extends Application {
                 case DIGIT3: // 按下鍵盤 3
                     gameLoop.switchWeapon(WeaponType.HEAVY);
                     break;
+                case DIGIT4: // 按下鍵盤 3
+                    gameLoop.switchWeapon(WeaponType.HEAL);
+                    break;
+                case DIGIT5: // 按下鍵盤 3
+                    gameLoop.switchWeapon(WeaponType.FIRE);
+                    break;
+                case DIGIT6: // 按下鍵盤 3
+                    gameLoop.switchWeapon(WeaponType.SPEED_DOWN);
+                    break;
                 case KeyCode.Q:
                     gameLoop.atklevelup();
                     break;

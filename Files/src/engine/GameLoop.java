@@ -4,6 +4,8 @@ import engine.entity.Bullet;
 import engine.entity.Castle;
 import engine.entity.enemy.*;
 import javafx.animation.AnimationTimer;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -16,6 +18,7 @@ import javafx.scene.text.Font;
 import java.util.ArrayList;
 import java.util.List;
 import engine.entity.WeaponType;
+import javafx.util.Duration;
 
 public class GameLoop extends AnimationTimer {
     private Pane gamePane;
@@ -170,10 +173,21 @@ public class GameLoop extends AnimationTimer {
                             // 冰凍效果：麻痺 15 幀
                             e.applyStun(15);
                         }
+
                         else if (b.getWeaponType() == WeaponType.HEAVY) {
                             // 【擊退重砲效果】：將敵人往上推 30 像素
                             // 減去 Y 值代表往螢幕上方移動（退回出發點）
-                            e.setY(e.getY() - 30);
+                            Timeline y=new Timeline(new KeyFrame(Duration.seconds(0.01), event->{e.setY(e.getY()-1);
+                            }
+                            ));
+                            y.setCycleCount(30);
+                            y.play();
+                            Timeline x=new Timeline(new KeyFrame(Duration.seconds(0.01), event->{e.setY(e.getY());
+                            }
+                            ));
+                            x.setCycleCount(10);
+                            x.play();
+
 
                             // 為了視覺流暢，立即更新圖案位置
                             e.updateSpritePosition();

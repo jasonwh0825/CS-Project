@@ -77,6 +77,7 @@ public class Castle extends Entity {
     public int getAtkLevel() { return atkLevel; }
     public int getHpLevel() { return hpLevel; }
 
+
     @Override
     public void update() { }
 }

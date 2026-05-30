@@ -19,10 +19,17 @@ import java.util.ArrayList;
 import java.util.List;
 import engine.entity.WeaponType;
 import javafx.util.Duration;
+import java.util.function.Consumer;
+import javafx.animation.FadeTransition;
+import javafx.animation.TranslateTransition;
+import javafx.animation.ParallelTransition;
+import javafx.util.Duration;
+import javafx.scene.text.FontWeight;
 
 import static engine.entity.WeaponType.*;
 
 public class GameLoop extends AnimationTimer {
+    private Consumer<Double> onReturnToMenu;
     private Pane gamePane;
     public Castle castle;
     private List<Enemy> enemies = new ArrayList<>();
@@ -38,10 +45,16 @@ public class GameLoop extends AnimationTimer {
     private WeaponType currentWeapon = NORMAL;
     private int currentWave = 1;
     private boolean hasSpawnedCurrentWaveBoss = false;
+    private int lastShootFrame = -60; // 記錄上次射擊的幀數 (預設負數確保遊戲一開始就能馬上開火)
+    private int shootCooldown = 15;// 射擊冷卻幀數 (60幀大約是一秒，15幀代表一秒最多射4發)
+    private boolean isMouseShooting = false;
+    private double targetMouseX = 0;
+    private double targetMouseY = 0;
 
-    public GameLoop(Pane gamePane, int accountLevel) {
+    public GameLoop(Pane gamePane, int accountLevel ,Consumer<Double> onReturnToMenu) {
         this.gamePane = gamePane;
         this.accountLevel = accountLevel;
+        this.onReturnToMenu = onReturnToMenu;
         initGame();
         initHUD();
         initUpgradeUI();
@@ -55,6 +68,7 @@ public class GameLoop extends AnimationTimer {
         killCount = 0;
         frameCount = 0;
         this.currentWave= 1;
+        this.lastShootFrame = -shootCooldown;
     }
 
     public void castUltimate() {
@@ -81,24 +95,85 @@ public class GameLoop extends AnimationTimer {
         castle.upgradeMaxHp();
     }
 
-    public void switchWeapon(WeaponType newWeapon) {
-        this.currentWeapon = newWeapon;
-        System.out.println("切換武器：" + newWeapon.getName());
+    // 在 GameLoop.java 裡面
+    public void switchWeapon(WeaponType type) {
+        if (type.isUnlocked(this.accountLevel)) {
+            this.currentWeapon = type;
+            System.out.println("切換武器至: " + type.getName());
+        } else {
+            showWarningMessage("等級不足！解鎖 " + type.getName() + " 需要 Lv." + type.getUnlockLevel());
+        }
+    }
+
+    // 在畫面上顯示一個會往上飄並消失的警告文字
+    private void showWarningMessage(String message) {
+        Label warningLabel = new Label(message);
+        warningLabel.setFont(Font.font("System", FontWeight.BOLD, 24));
+        warningLabel.setTextFill(Color.RED);
+        // 加一點半透明黑底讓紅字在任何背景下都能看清楚
+        warningLabel.setStyle("-fx-background-color: rgba(0,0,0,0.5); -fx-padding: 10px; -fx-background-radius: 5px;");
+
+        // 將文字大概放在畫面正中央偏上方 (戰場寬度是 800，高度 700)
+        warningLabel.setLayoutX(250);
+        warningLabel.setLayoutY(300);
+
+        gamePane.getChildren().add(warningLabel);
+
+        // 1. 漸隱動畫 (2秒內透明度從 1.0 變成 0.0)
+        FadeTransition fade = new FadeTransition(Duration.seconds(2), warningLabel);
+        fade.setFromValue(1.0);
+        fade.setToValue(0.0);
+
+        // 2. 位移動畫 (2秒內往上移動 50 像素)
+        TranslateTransition translate = new TranslateTransition(Duration.seconds(2), warningLabel);
+        translate.setByY(-50);
+
+        // 3. 把兩個動畫綁在一起同時播放
+        ParallelTransition parallelTransition = new ParallelTransition(fade, translate);
+
+        // 4. 動畫播完後，記得把這個 Label 從畫面上徹底移除，避免吃記憶體
+        parallelTransition.setOnFinished(e -> gamePane.getChildren().remove(warningLabel));
+
+        // 播放動畫！
+        parallelTransition.play();
     }
 
     public void playerShoot(double targetX, double targetY) {
         if (isGameOver) return;
-        // 把最後一個參數換成 currentWeapon
+
+        //檢查冷卻時間：如果間隔太短，直接 return 取消這次射擊
+        if (frameCount - lastShootFrame < shootCooldown) {
+            return;
+        }
+        //成功射擊！更新最後開火的幀數為「現在這一幀」
+        lastShootFrame = frameCount;
+        // 原本的射擊邏輯保持不變
         Bullet bullet = new Bullet(castle.getX() + 400, castle.getY(), targetX, targetY,
                 castle.getCurrentAtkDamage() + currentWeapon.getBaseDamage(), 8.0, false, currentWeapon);
         bullets.add(bullet);
         gamePane.getChildren().add(bullet.getSprite());
     }
 
+    // 讓外部 (MainApp) 可以更新滑鼠狀態
+    public void setShootingState(boolean isShooting, double x, double y) {
+        this.isMouseShooting = isShooting;
+        this.targetMouseX = x;
+        this.targetMouseY = y;
+    }
+
+    public void updateMousePosition(double x, double y) {
+        this.targetMouseX = x;
+        this.targetMouseY = y;
+    }
+
     @Override
     public void handle(long now) {
         if (isGameOver) return;
         frameCount++;
+
+        if (isMouseShooting) {
+            playerShoot(targetMouseX, targetMouseY);
+        }
 
         castle.passiveChargeUlt(0.1);
 
@@ -370,12 +445,28 @@ public class GameLoop extends AnimationTimer {
         VBox box = new VBox(20);
         box.setAlignment(Pos.CENTER);
         box.setStyle("-fx-background-color: rgba(0,0,0,0.8);");
-        box.setPrefSize(800, 700);
+        box.setPrefSize(1000, 700); // 寬度配合現在的 1000
+
         Label l = new Label("GAME OVER");
-        l.setFont(new Font(50)); l.setTextFill(Color.RED);
-        Button r = new Button("重新開始");
-        r.setOnAction(e -> restartGame(box));
-        box.getChildren().addAll(l, r);
+        l.setFont(new Font(50));
+        l.setTextFill(Color.RED);
+
+        // 新增：顯示這場獲得的總經驗值
+        Label expLabel = new Label("獲得經驗值: " + (int)castle.getExp() + " EXP");
+        expLabel.setFont(new Font(30));
+        expLabel.setTextFill(Color.GOLD);
+
+        Button r = new Button("結算並返回首頁");
+        r.setFont(new Font(20));
+        r.setOnAction(e -> {
+            this.stop(); // 停止遊戲的迴圈
+            if (onReturnToMenu != null) {
+                // 觸發回呼函數，把累積的 exp 傳回給 MainApp
+                onReturnToMenu.accept(castle.getExp());
+            }
+        });
+
+        box.getChildren().addAll(l, expLabel, r);
         gamePane.getChildren().add(box);
     }
 

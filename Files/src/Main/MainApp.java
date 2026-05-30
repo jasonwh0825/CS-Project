@@ -1,117 +1,187 @@
 package Main;
 
 import engine.GameLoop;
-import engine.entity.Castle;
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.input.KeyCode;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
-import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
 import engine.entity.WeaponType;
-
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.input.KeyCode;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.stage.Stage;
 
 public class MainApp extends Application {
     private Stage primaryStage;
+
+    // 模擬的玩家資料 (未來可替換成讀取資料庫或存檔)
+    private String currentPlayerName = "Guest_001";
+    private int currentAccountLevel = 3; // 假設玩家目前等級是 3（可以手動改這個數字測試解鎖）
+
     @Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
-        primaryStage.setTitle("Project");
-        primaryStage.setResizable(false); // 固定視窗大小防止跑版
-        // showLoginScene();
+        primaryStage.setTitle("Project - 首頁");
+        primaryStage.setResizable(false);
+
+        // 啟動時先顯示主畫面
+        showMainMenuScene();
         primaryStage.show();
-        showGameScene();
     }
 
-/*
-    public void showLoginScene() {
-        // 這裡你可以建立一個簡單的 VBox 或是載入 login.fxml
-        // 裡面放 TextField (帳號) 和 Button (登入)
-        // 點擊登入後，呼叫 showGameScene()
-        VBox login=new VBox();
-        login.setAlignment(Pos.CENTER);
+    public void showMainMenuScene() {
+        AnchorPane root = new AnchorPane();
+        root.setStyle("-fx-background-color: #2b2b2b;"); // 設定深色背景
 
-        Label titleLabel = new Label("歡迎進入遊戲");
-        TextField usernameField = new TextField();
-        usernameField.setPromptText("輸入帳號");
-        usernameField.setMaxWidth(200);
+        // ==========================================
+        // 左上：玩家資訊 (User Info)
+        // ==========================================
+        VBox userInfoBox = new VBox(5);
+        userInfoBox.setPadding(new Insets(15));
+        userInfoBox.setStyle("-fx-background-color: rgba(255, 255, 255, 0.1); -fx-background-radius: 10;");
 
-        Button loginButton = new Button("登入");
-        loginButton.setOnAction(e -> {
-                showGameScene();
-        });
+        Label nameLabel = new Label("玩家名稱: " + currentPlayerName);
+        nameLabel.setTextFill(Color.WHITE);
+        nameLabel.setFont(Font.font("System", FontWeight.BOLD, 18));
 
-        login.getChildren().addAll(titleLabel, usernameField,loginButton);
+        Label levelLabel = new Label("帳號等級: Lv." + currentAccountLevel);
+        levelLabel.setTextFill(Color.GOLD);
+        levelLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
 
-        Scene loginScene = new Scene(login, 800, 700);
+        userInfoBox.getChildren().addAll(nameLabel, levelLabel);
+        AnchorPane.setTopAnchor(userInfoBox, 20.0);
+        AnchorPane.setLeftAnchor(userInfoBox, 20.0);
 
-        // 將其顯示在 Stage 上
-        primaryStage.setScene(loginScene);
+        // ==========================================
+        // 右上：排行榜 (Leaderboard - 可展開 TitledPane)
+        // ==========================================
+        VBox leaderboardContent = new VBox(5);
+        leaderboardContent.getChildren().addAll(
+                new Label("1. 神手玩家 - Lv.50"),
+                new Label("2. 亞軍大大 - Lv.45"),
+                new Label("3. 季軍高手 - Lv.42"),
+                new Label("... (載入中)")
+        );
+        TitledPane leaderboardPane = new TitledPane("🏆 經驗值排行榜", leaderboardContent);
+        leaderboardPane.setExpanded(false); // 預設收合
+        leaderboardPane.setPrefWidth(200);
+        AnchorPane.setTopAnchor(leaderboardPane, 20.0);
+        AnchorPane.setRightAnchor(leaderboardPane, 20.0);
+
+        // ==========================================
+        // 左下：武器庫 (Armory)
+        // ==========================================
+        VBox armoryBox = new VBox(10);
+        armoryBox.setPadding(new Insets(15));
+        armoryBox.setStyle("-fx-background-color: rgba(0, 0, 0, 0.5); -fx-background-radius: 10;");
+        Label armoryTitle = new Label("⚔️ 武器庫 (隨等級解鎖)");
+        armoryTitle.setTextFill(Color.LIGHTGRAY);
+        armoryTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
+        armoryBox.getChildren().add(armoryTitle);
+
+        // 建立武器列表 (簡單模擬解鎖邏輯：每升1級解鎖一把)
+        int requiredLevel = 1;
+        for (WeaponType weapon : WeaponType.values()) {
+            boolean isUnlocked = currentAccountLevel >= requiredLevel;
+            String statusText = isUnlocked ? "✅ 解鎖" : "🔒 需 Lv." + requiredLevel;
+            Color statusColor = isUnlocked ? Color.LIGHTGREEN : Color.GRAY;
+
+            Label weaponLabel = new Label(weapon.getName() + " - " + statusText);
+            weaponLabel.setTextFill(statusColor);
+            armoryBox.getChildren().add(weaponLabel);
+            requiredLevel++; // 下一把武器需要的等級 +1
+        }
+
+        AnchorPane.setBottomAnchor(armoryBox, 20.0);
+        AnchorPane.setLeftAnchor(armoryBox, 20.0);
+
+        // ==========================================
+        // 右下：開始遊戲按鈕 (Start Game)
+        // ==========================================
+        Button startBtn = new Button("開始遊戲 ▶");
+        startBtn.setFont(Font.font("System", FontWeight.BOLD, 24));
+        startBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 15;");
+        startBtn.setPrefSize(180, 60);
+
+        // 點擊後跳轉到遊戲畫面
+        startBtn.setOnAction(e -> showGameScene());
+
+        AnchorPane.setBottomAnchor(startBtn, 20.0);
+        AnchorPane.setRightAnchor(startBtn, 20.0);
+
+        // 將四個區塊加入畫面
+        root.getChildren().addAll(userInfoBox, leaderboardPane, armoryBox, startBtn);
+
+        Scene menuScene = new Scene(root, 800, 700);
+        primaryStage.setScene(menuScene);
     }
-*/
 
+    // 正確的切換至遊戲畫面方法
+    // 正確的切換至遊戲畫面方法
     public void showGameScene() {
-        // 1. 建立遊戲的戰鬥畫布 (Pane)
+        primaryStage.setTitle("Project - 遊戲中");
+
         Pane gamePane = new Pane();
-        gamePane.setPrefSize(1000, 700); // 設定視窗寬 800，高 700
+        GameLoop gameLoop = new GameLoop(gamePane, currentAccountLevel);
 
-        // 2. 初始化核心遊戲引擎 (GameLoop)
-        // 這裡暫時帶入帳號等級 1，等夥伴 B 的登入系統做好後，再從登入資料傳進來
-        int temporaryAccountLevel = 1;
-        GameLoop gameLoop = new GameLoop(gamePane, temporaryAccountLevel);
+        // 1. 【修正 UI 不見的問題】視窗寬度必須是 1000 (800 遊戲戰場 + 200 UI 側邊欄)
+        Scene scene = new Scene(gamePane, 1000, 700);
 
-        // 3. 建立 JavaFX 視現場 (Scene) 並放入視窗 (Stage)
-        Scene scene = new Scene(gamePane);
-        scene.setOnMouseClicked(event -> {
-            if (!(event.getTarget() instanceof javafx.scene.control.Button)) {
+        // 2. 【修正無法攻擊的問題】加入滑鼠點擊與拖曳的監聽事件
+        scene.setOnMousePressed(event -> {
+            // 確保只有點擊戰場區 (X < 800) 才發射子彈，避免點擊側邊欄升級按鈕時也開火
+            if (event.getX() < 800) {
                 gameLoop.playerShoot(event.getX(), event.getY());
             }
         });
-        // 在 MainApp.java 的 start 方法中
+
+        scene.setOnMouseDragged(event -> {
+            if (event.getX() < 800) {
+                gameLoop.playerShoot(event.getX(), event.getY());
+            }
+        });
+
+        // 3. 恢復鍵盤監聽事件 (放大招、切換武器)
         scene.setOnKeyReleased(event -> {
             switch (event.getCode()) {
                 case SPACE:
                     gameLoop.castUltimate();
                     break;
-                case DIGIT1: // 按下鍵盤 1
+                case DIGIT1:
                     gameLoop.switchWeapon(WeaponType.NORMAL);
                     break;
-                case DIGIT2: // 按下鍵盤 2
+                case DIGIT2:
                     gameLoop.switchWeapon(WeaponType.ICE);
                     break;
-                case DIGIT3: // 按下鍵盤 3
+                case DIGIT3:
                     gameLoop.switchWeapon(WeaponType.HEAVY);
                     break;
-                case DIGIT4: // 按下鍵盤 3
+                case DIGIT4:
                     gameLoop.switchWeapon(WeaponType.HEAL);
                     break;
-                case DIGIT5: // 按下鍵盤 3
+                case DIGIT5:
                     gameLoop.switchWeapon(WeaponType.FIRE);
                     break;
-                case DIGIT6: // 按下鍵盤 3
+                case DIGIT6:
                     gameLoop.switchWeapon(WeaponType.SPEED_DOWN);
                     break;
-                case KeyCode.Q:
+                case Q:
                     gameLoop.atklevelup();
                     break;
-                case KeyCode.E:
+                case E:
                     gameLoop.hplevelup();
                     break;
             }
         });
 
         primaryStage.setScene(scene);
-        // 4. 正式啟動遊戲主迴圈，怪物會開始往下掉！
         gameLoop.start();
     }
+
     public static void main(String[] args) {
-        // JavaFX 的標準啟動指令，它會自動呼叫上面的 start 方法
         launch(args);
     }
 }

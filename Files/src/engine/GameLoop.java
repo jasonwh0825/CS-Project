@@ -37,6 +37,7 @@ public class GameLoop extends AnimationTimer {
     private boolean isBossActive = false;
     private WeaponType currentWeapon = NORMAL;
     private int currentWave = 1;
+    private boolean hasSpawnedCurrentWaveBoss = false;
 
     public GameLoop(Pane gamePane, int accountLevel) {
         this.gamePane = gamePane;
@@ -99,11 +100,14 @@ public class GameLoop extends AnimationTimer {
         if (isGameOver) return;
         frameCount++;
 
-        // 大招隨時間充能 (每幀 0.1%，約 16 秒滿)
         castle.passiveChargeUlt(0.1);
 
-        if (!isBossActive && killCount > 0 && killCount % 20 == 0) {
+        // 核心修正：檢查是否達到 20 擊殺且這波還沒生過 BOSS
+        if (!isBossActive && !hasSpawnedCurrentWaveBoss && killCount >= currentWave * 20) {
             spawnBoss();
+            hasSpawnedCurrentWaveBoss = true; // 標記已產生，防止重複觸發
+
+            // 紅光特效
             Rectangle waveFlash = new Rectangle(800, 700, Color.RED);
             waveFlash.setOpacity(0.3);
             gamePane.getChildren().add(waveFlash);
@@ -111,7 +115,9 @@ public class GameLoop extends AnimationTimer {
                 try { Thread.sleep(200); } catch (InterruptedException ex) {}
                 Platform.runLater(() -> gamePane.getChildren().remove(waveFlash));
             }).start();
-        } else if (!isBossActive && frameCount % 100 == 0) {
+        }
+        // 只有在非 BOSS 戰期間才生小怪
+        else if (!isBossActive && frameCount % 100 == 0) {
             spawnNormalEnemy();
         }
 
@@ -146,6 +152,7 @@ public class GameLoop extends AnimationTimer {
                 // 3. 處理 BOSS 死亡與波數推進特效
                 if (e instanceof BossEnemy) {
                     isBossActive = false;
+                    hasSpawnedCurrentWaveBoss = false;
                     currentWave++; // 【關鍵】打完 BOSS，正式進入下一波！
 
                     // 【特效】通關閃爍金光，提示玩家進入下一波

@@ -12,14 +12,11 @@ public abstract class Entity {
     protected double hp, maxHp;
     protected boolean isDead = false;
 
-    // 血條組件
     protected Rectangle hpBar;
     protected Rectangle hpBarBg;
 
-    // 在 Entity.java 裡面加入
     public void setY(double y) {
         this.y = y;
-        // 重要：設定完座標後，要同步更新圖案(Sprite)的位置
         updateSpritePosition();
     }
 
@@ -38,18 +35,16 @@ public abstract class Entity {
         container = new Pane();
         container.getChildren().add(sprite);
 
-        // 初始化血條背景 (灰色)
-        hpBarBg = new Rectangle(sprite.getBoundsInLocal().getWidth(), 5, Color.GRAY);
-        hpBarBg.setTranslateY(-10);
-
-        // 初始化血條 (綠色)
-        hpBar = new Rectangle(sprite.getBoundsInLocal().getWidth(), 5, Color.GREEN);
-        hpBar.setTranslateY(-10);
+        // 這裡我們先隨便給個寬度 1，反正馬上就會呼叫 syncHpBar() 來校正
+        hpBarBg = new Rectangle(1, 5, Color.GRAY);
+        hpBar = new Rectangle(1, 5, Color.GREEN);
 
         container.getChildren().addAll(hpBarBg, hpBar);
+
+
+        syncHpBar();
         updateSpritePosition();
 
-        // --- 修正 Bug 1: 如果是子彈(maxHp <= 1)，隱藏血條 ---
         if (maxHp <= 1.0) {
             hpBar.setVisible(false);
             hpBarBg.setVisible(false);
@@ -67,8 +62,28 @@ public abstract class Entity {
             hp = 0;
             isDead = true;
         }
-        // 更新血條長度
-        hpBar.setWidth((hp / maxHp) * sprite.getBoundsInLocal().getWidth());
+
+        syncHpBar();
+    }
+
+    // ==========================================
+    // 【新增這裡】自動對齊並計算血條長度的神仙方法
+    // ==========================================
+    public void syncHpBar() {
+        // 使用 getBoundsInParent() 可以正確抓到圓形(負座標)和方形的真實邊界
+        double width = sprite.getBoundsInParent().getWidth();
+        double minX = sprite.getBoundsInParent().getMinX();
+        double minY = sprite.getBoundsInParent().getMinY();
+
+        // 1. 同步背景灰條 (長度 = 怪物的寬度)
+        hpBarBg.setWidth(width);
+        hpBarBg.setTranslateX(minX);
+        hpBarBg.setTranslateY(minY - 10); // 浮在頭上 10px
+
+        // 2. 同步綠色血條 (長度 = 比例 * 怪物的寬度)
+        hpBar.setWidth((hp / maxHp) * width);
+        hpBar.setTranslateX(minX);
+        hpBar.setTranslateY(minY - 10);
     }
 
     public abstract void update();

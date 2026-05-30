@@ -3,11 +3,12 @@ package engine.entity;
 public enum WeaponType {
     // 名稱, 基礎傷害, 大招名稱, 【解鎖等級】
     NORMAL("普通機槍", 15, "全螢幕彈幕", 1),
-    ICE("冰凍雷電", 10, "冷凍2秒", 3),
-    HEAVY("擊退重炮", 10, "強力震盪波", 5),
-    HEAL("治療槍", 10, "治癒", 7),
-    FIRE("火焰槍", 10, "大火", 10),
-    SPEED_DOWN("緩速槍", 10, "緩速", 12);
+    SPEED_DOWN("緩速槍", 10, "緩速", 3),
+    ICE("冰凍雷電", 10, "冷凍2秒", 8),
+    HEAVY("擊退重炮", 10, "強力震盪波", 12),
+    HEAL("治療槍", 10, "治癒", 16),
+    FIRE("火焰槍", 10, "大火", 20);
+
 
     private final String name;
     private final double baseDamage;

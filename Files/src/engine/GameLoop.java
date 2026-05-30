@@ -33,6 +33,7 @@ public class GameLoop extends AnimationTimer {
     private Pane gamePane;
     public Castle castle;
     private List<Enemy> enemies = new ArrayList<>();
+    private List<Enemy> pendingEnemies = new ArrayList<>(); // 暫存小怪避免崩潰
     private List<Bullet> bullets = new ArrayList<>();
     private Label hudLabel;
     private VBox upgradePanel;
@@ -72,18 +73,105 @@ public class GameLoop extends AnimationTimer {
     }
 
     public void castUltimate() {
-        if (castle.getUltEnergy() < 100) return;
+        // 1. 檢查能量是否滿 100
+        if (castle.getUltEnergy() < 100) {
+            System.out.println("大招能量不足！目前: " + (int)castle.getUltEnergy());
+            return;
+        }
+
+        // 2. 消耗能量
         castle.useUlt();
-        Rectangle flash = new Rectangle(800, 700, Color.WHITE);
-        flash.setOpacity(0.6);
-        gamePane.getChildren().add(flash);
-        new Thread(() -> {
-            try { Thread.sleep(100); } catch (InterruptedException e) {}
-            Platform.runLater(() -> gamePane.getChildren().remove(flash));
-        }).start();
-        for (Enemy e : enemies) {
-            e.takeDamage(80+castle.currentAtkDamage*6);
-            e.applyStun(120);
+
+        // 3. 取得加成變數
+        int atkLv = castle.getAtkLevel();
+        double baseDmg = currentWeapon.getBaseDamage() + castle.currentAtkDamage;
+
+        // 4. 根據當前武器施放對應大招
+        switch (currentWeapon) {
+            case NORMAL:
+                // 【狂熱彈幕】：扇形發射大量子彈，數量隨等級上升
+                int bulletCount = 10 + (atkLv * 2); // 預設 12 發起跳
+                double angleStep = Math.PI / (bulletCount - 1);
+
+                for (int i = 0; i < bulletCount; i++) {
+                    // 角度從 180度(左) 到 360度(右) 呈扇形往上打
+                    double angle = Math.PI + (i * angleStep);
+
+                    // 計算子彈朝向的虛擬目標點
+                    double startX = castle.getX() + 400; // 假設主堡寬 800，從正中央發射
+                    double startY = castle.getY();
+                    double targetX = startX + Math.cos(angle) * 100;
+                    double targetY = startY + Math.sin(angle) * 100;
+
+                    Bullet b = new Bullet(
+                            startX, startY, targetX, targetY,
+                            baseDmg, 12.0, false, WeaponType.NORMAL
+                    );
+                    bullets.add(b);
+                    gamePane.getChildren().add(b.getSprite());
+                }
+                showWarningMessage("狂熱彈幕！發射 " + bulletCount + " 發子彈！");
+                break;
+
+            case ICE:
+                // 【絕對零度】：全體凍結，控制時間隨攻擊等級上升
+                int freezeDuration = 120 + (atkLv * 30); // 基礎2秒(120幀) + 每級加0.5秒
+                for (Enemy e : enemies) {
+                    if (e instanceof BossEnemy) {
+                        e.applyStun(freezeDuration / 2);// Boss 控制時間減半
+                        e.takeDamage(80+atkLv*10);
+                    } else {
+                        e.applyStun(freezeDuration);
+                        e.takeDamage(80+atkLv*10);
+                    }
+                }
+                showWarningMessage("絕對零度！全場凍結！");
+                break;
+
+            case HEAVY:
+                // 【引力震盪波】：全體擊退
+                for (Enemy e : enemies) {
+                    double knockback = (e instanceof BossEnemy) ? 40 : 150; // Boss 擊退抗性
+                    // 將怪物 Y 座標往上推，且不允許被推到畫面外 (最小為 0)
+                    e.setY(Math.max(0, e.getY() - knockback));
+                }
+                showWarningMessage("引力震盪波！退避！");
+                break;
+
+            case HEAL:
+                // 【緊急修復】：依等級恢復最大生命值，20% 起跳，上限 50%
+                double healPercent = Math.min(0.5, 0.2 + (atkLv * 0.02));
+                castle.healByPercentage(healPercent);
+                showWarningMessage("緊急修復！恢復 " + (int)(healPercent * 100) + "% 生命值！");
+                break;
+
+            case FIRE:
+                // 【烈焰風暴】：全體真實傷害，傷害隨攻擊等級大幅上升
+                double fireDamage = 300 + (atkLv * 50);
+                for (Enemy e : enemies) {
+                    if (e instanceof BossEnemy) {
+                        e.takeDamage(fireDamage * 0.5); // Boss 受傷減半
+                    } else {
+                        e.takeDamage(fireDamage);
+                    }
+                }
+                showWarningMessage("烈焰風暴！造成 " + (int)fireDamage + " 點傷害！");
+                break;
+
+            case SPEED_DOWN:
+                // 【時間泥沼】：全體極度緩速，持續時間隨等級上升
+                int slowDuration = 300 + (atkLv * 60); // 基礎 5秒(300幀) + 每級加1秒
+                for (Enemy e : enemies) {
+                    if (e instanceof BossEnemy) {
+                        e.applySlow(slowDuration / 2); // Boss 緩速時間減半
+                        e.takeDamage(80+atkLv*10);
+                    } else {
+                        e.applySlow(slowDuration);
+                        e.takeDamage(80+atkLv*10);
+                    }
+                }
+                showWarningMessage("時間泥沼！全場動作遲緩！");
+                break;
         }
     }
 
@@ -199,6 +287,8 @@ public class GameLoop extends AnimationTimer {
         updateEnemies();
         updateBullets();
         updateUI();
+        enemies.addAll(pendingEnemies);
+        pendingEnemies.clear();
     }
 
     private void updateEnemies() {
@@ -378,16 +468,20 @@ public class GameLoop extends AnimationTimer {
 
     private void spawnBoss() {
         isBossActive = true;
-        BossEnemy boss = new BossEnemy(350, -100);
 
-        // 第一個 BOSS 出現時 currentWave 還是 1，所以會是正常的基礎強度！
-        if (currentWave > 1) {
-            double multiplier = 1.0 + (currentWave - 1) * 0.8;
-            boss.enhanceStats(multiplier);
-        }
+        // 1. 建立隨機 Boss，傳入：座標、目前波數、以及處理小怪生成的邏輯 (Lambda)
+        BossEnemy boss = new BossEnemy(Math.random() * 600 + 100, -100, currentWave, (minion) -> {
+            // 當 Boss (例如母體) 產生小怪時，會呼叫這裡
+            pendingEnemies.add(minion);
+            gamePane.getChildren().add(minion.getSprite());
+        });
 
+        // 2. 將 Boss 加入清單與畫面上
         enemies.add(boss);
         gamePane.getChildren().add(boss.getSprite());
+
+        // 3. 觸發警告文字動畫 (你已經寫好的方法)
+        showWarningMessage("⚠️ 警告！【" + boss.getBossName() + "】來襲！");
     }
 
 

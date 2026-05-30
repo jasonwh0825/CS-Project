@@ -2,6 +2,8 @@ package Main;
 
 import engine.GameLoop;
 import engine.entity.WeaponType;
+import javafx.animation.FadeTransition;
+import javafx.animation.TranslateTransition;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -13,6 +15,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class MainApp extends Application {
     private Stage primaryStage;
@@ -21,6 +24,9 @@ public class MainApp extends Application {
     private String currentPlayerName = "Guest_001";
     private int currentAccountLevel = 1;
     private double currentAccountExp = 0;
+
+    // ⭐ 初始與帳號等級相同，避免一開遊戲就跳升級
+    private int levelBeforeGame = 12;
 
     @Override
     public void start(Stage primaryStage) {
@@ -78,7 +84,7 @@ public class MainApp extends Application {
         leaderboardContent.getChildren().addAll(
                 new Label("1. 神手玩家 - Lv.50"),
                 new Label("2. 亞軍大大 - Lv.45"),
-                new Label("3. 季軍高手 - Lv.42"),
+                new Label("3. 季這次高手 - Lv.42"),
                 new Label("... (載入中)")
         );
         TitledPane leaderboardPane = new TitledPane("🏆 經驗值排行榜", leaderboardContent);
@@ -93,7 +99,7 @@ public class MainApp extends Application {
         VBox armoryBox = new VBox(10);
         armoryBox.setPadding(new Insets(15));
         armoryBox.setStyle("-fx-background-color: rgba(0, 0, 0, 0.5); -fx-background-radius: 10;");
-        Label armoryTitle = new Label("武器庫 (隨等級解鎖)");
+        Label armoryTitle = new Label("武器庫（隨等級解鎖）");
         armoryTitle.setTextFill(Color.LIGHTGRAY);
         armoryTitle.setFont(Font.font("System", FontWeight.BOLD, 16));
         armoryBox.getChildren().add(armoryTitle);
@@ -118,8 +124,8 @@ public class MainApp extends Application {
         // ==========================================
         // 右下：按鈕控制區 (開始遊戲 / 退出遊戲)
         // ==========================================
-        VBox menuButtonsBox = new VBox(15); // 按鈕之間的間距為 15 像素
-        menuButtonsBox.setAlignment(Pos.CENTER_RIGHT); // 靠右對齊
+        VBox menuButtonsBox = new VBox(15);
+        menuButtonsBox.setAlignment(Pos.CENTER_RIGHT);
 
         // 1. 開始遊戲按鈕
         Button startBtn = new Button("開始遊戲 ▶");
@@ -132,36 +138,37 @@ public class MainApp extends Application {
         Button exitBtn = new Button("退出遊戲 ❌");
         exitBtn.setFont(Font.font("System", FontWeight.BOLD, 20));
         exitBtn.setStyle("-fx-background-color: #d32f2f; -fx-text-fill: white; -fx-background-radius: 15;");
-        exitBtn.setPrefSize(180, 50); // 高度稍微矮一點，讓視覺上有主次之分
+        exitBtn.setPrefSize(180, 50);
 
-        // 點擊後關閉 JavaFX 視窗並結束程式
         exitBtn.setOnAction(e -> javafx.application.Platform.exit());
-
-        // 把兩個按鈕放進 VBox 盒子裡
         menuButtonsBox.getChildren().addAll(startBtn, exitBtn);
 
-        // 將整個按鈕盒子固定在右下角
         AnchorPane.setBottomAnchor(menuButtonsBox, 20.0);
         AnchorPane.setRightAnchor(menuButtonsBox, 20.0);
-
-        // 將四個區塊加入畫面
         root.getChildren().addAll(userInfoBox, leaderboardPane, armoryBox, menuButtonsBox);
 
-        Scene menuScene = new Scene(root, 800, 700);
+
+        StackPane mainContainer = new StackPane(root);
+        Scene menuScene = new Scene(mainContainer, 800, 700);
         primaryStage.setScene(menuScene);
+
+        if (currentAccountLevel > levelBeforeGame) {
+            showLevelUpNotification(mainContainer, currentAccountLevel);
+            // 顯示完後更新記錄，避免重複彈出
+            levelBeforeGame = currentAccountLevel;
+        }
     }
 
-    // 正確的切換至遊戲畫面方法
-    // 正確的切換至遊戲畫面方法
     public void showGameScene() {
+        levelBeforeGame = currentAccountLevel;
+
         primaryStage.setTitle("Project - 遊戲中");
 
         Pane gamePane = new Pane();
         GameLoop gameLoop = new GameLoop(gamePane, currentAccountLevel, (earnedExp) -> {
             addExpAndLevelUp(earnedExp); // 1. 計算經驗值並判斷是否升級
-            showMainMenuScene();         // 2. 重新顯示首頁 (畫面會自動刷新等級與武器解鎖狀態)
+            showMainMenuScene();         // 2. 重新顯示首頁 (此時會觸發彈窗)
         });
-
 
         Scene scene = new Scene(gamePane, 1000, 700);
         scene.setOnMousePressed(event -> {
@@ -180,7 +187,6 @@ public class MainApp extends Application {
             gameLoop.setShootingState(false, event.getX(), event.getY());
         });
 
-        // 3. 恢復鍵盤監聽事件 (放大招、切換武器)
         scene.setOnKeyReleased(event -> {
             switch (event.getCode()) {
                 case SPACE:
@@ -190,19 +196,19 @@ public class MainApp extends Application {
                     gameLoop.switchWeapon(WeaponType.NORMAL);
                     break;
                 case DIGIT2:
-                    gameLoop.switchWeapon(WeaponType.ICE);
+                    gameLoop.switchWeapon(WeaponType.SPEED_DOWN);
                     break;
                 case DIGIT3:
-                    gameLoop.switchWeapon(WeaponType.HEAVY);
+                    gameLoop.switchWeapon(WeaponType.ICE);
                     break;
                 case DIGIT4:
-                    gameLoop.switchWeapon(WeaponType.HEAL);
+                    gameLoop.switchWeapon(WeaponType.HEAVY);
                     break;
                 case DIGIT5:
-                    gameLoop.switchWeapon(WeaponType.FIRE);
+                    gameLoop.switchWeapon(WeaponType.HEAL);
                     break;
                 case DIGIT6:
-                    gameLoop.switchWeapon(WeaponType.SPEED_DOWN);
+                    gameLoop.switchWeapon(WeaponType.FIRE);
                     break;
                 case Q:
                     gameLoop.atklevelup();
@@ -215,6 +221,48 @@ public class MainApp extends Application {
 
         primaryStage.setScene(scene);
         gameLoop.start();
+    }
+
+    private void showLevelUpNotification(StackPane rootContainer, int newLevel) {
+        VBox popup = new VBox(15);
+        popup.setStyle("-fx-background-color: rgba(20, 20, 20, 0.9); " +
+                "-fx-background-radius: 15; " +
+                "-fx-padding: 30; " +
+                "-fx-border-color: #FFD700; " +
+                "-fx-border-width: 4; " +
+                "-fx-border-radius: 15;");
+        popup.setAlignment(Pos.CENTER);
+        popup.setMaxSize(350, 180);
+
+        Label titleLabel = new Label("🎊 恭喜升級 🎊");
+        titleLabel.setStyle("-fx-text-fill: #FFD700; -fx-font-size: 28px; -fx-font-weight: bold;");
+
+        Label infoLabel = new Label("目前帳號等級: Lv." + newLevel);
+        infoLabel.setStyle("-fx-text-fill: white; -fx-font-size: 20px;");
+
+        popup.getChildren().addAll(titleLabel, infoLabel);
+
+        // 加入到畫面上
+        rootContainer.getChildren().add(popup);
+
+        // 動畫設定
+        popup.setTranslateY(-300);
+        popup.setOpacity(0);
+
+        TranslateTransition slideIn = new TranslateTransition(Duration.seconds(0.5), popup);
+        slideIn.setToY(0);
+
+        FadeTransition fadeIn = new FadeTransition(Duration.seconds(0.5), popup);
+        fadeIn.setToValue(1);
+
+        FadeTransition fadeOut = new FadeTransition(Duration.seconds(0.8), popup);
+        fadeOut.setDelay(Duration.seconds(3.0)); // 停留 3 秒
+        fadeOut.setToValue(0);
+        fadeOut.setOnFinished(e -> rootContainer.getChildren().remove(popup));
+
+        slideIn.play();
+        fadeIn.play();
+        fadeOut.play();
     }
 
     public static void main(String[] args) {

@@ -36,6 +36,23 @@ public class Castle extends Entity {
 
     public void useUlt() { this.ultEnergy = 0; }
 
+
+    // 依最大生命值的百分比補血
+    public void healByPercentage(double percent) {
+        double healAmount = this.maxHp * percent;
+        this.hp += healAmount;
+
+        // 確保補血不會超過上限
+        if (this.hp > this.maxHp) {
+            this.hp = this.maxHp;
+        }
+
+        // 更新實體的血條顯示
+        if (hpBar != null && maxHp > 0) {
+            hpBar.setWidth(sprite.getBoundsInLocal().getWidth() * (hp / maxHp));
+        }
+    }
+
     // 商店手動升級
     public boolean upgradeAttack() {
         double cost = getAtkUpgradeCost();

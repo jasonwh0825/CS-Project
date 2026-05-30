@@ -68,10 +68,12 @@ public abstract class Enemy extends Entity {
         }
     }
 
-    // 讓子彈呼叫的方法
-    public void applySlow(int frames) {
-        this.slowTimer = frames;
+    // 接受緩速效果 (傳入持續的幀數)
+    public void applySlow(int duration) {
+        // 如果怪物身上已經有緩速，就取時間比較長的那一個覆蓋
+        this.slowTimer = Math.max(this.slowTimer, duration);
     }
+
 
     // 取得實際速度的方法
     public double getActualSpeed() {

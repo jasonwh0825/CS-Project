@@ -199,12 +199,16 @@ public class GameLoop extends AnimationTimer {
                         e.takeDamage(b.getDamage());
 
                         // 2. 處理武器特殊效果
-                        if (e instanceof BossEnemy) {
-                            continue;
-                        }
+
                         if (b.getWeaponType() == ICE && Math.random() < 0.3) {
+                            if (e instanceof BossEnemy) {
+                                continue;
+                            }
                             e.applyStun(15);// 冰凍效果：麻痺 15 幀
                         } else if (b.getWeaponType() == HEAVY && Math.random() < 0.2) {
+                            if (e instanceof BossEnemy) {
+                                continue;
+                            }
                             Timeline y=new Timeline(new KeyFrame(Duration.seconds(0.01), event->{e.setY(e.getY()-1);}));
                             y.setCycleCount(30);
                             y.play();
@@ -212,15 +216,14 @@ public class GameLoop extends AnimationTimer {
                             x.setCycleCount(10);
                             x.play();
                             e.updateSpritePosition();// 為了視覺流暢，立即更新圖案位置
-                        } else if (b.getWeaponType() == FIRE) {
-                            Timeline y=new Timeline(new KeyFrame(Duration.seconds(1), event->{e.takeDamage(castle.getAtkLevel()*5);}));
+                        } else if (b.getWeaponType() == FIRE && Math.random() < 0.5) {
+                            Timeline y=new Timeline(new KeyFrame(Duration.seconds(1),event->{e.takeDamage(castle.getAtkLevel()*5);}));
                             y.setCycleCount(2);
                             y.play();
-                        } else if (b.getWeaponType() == SPEED_DOWN){
+                        } else if (b.getWeaponType() == SPEED_DOWN && Math.random() < 0.3){
                             e.applySlow(120);
 
-                            // 視覺回饋：可以讓怪物的透明度變低或變色，讓玩家知道他被緩速了
-                            e.getSprite().setOpacity(0.5);
+                            e.getSprite().setOpacity(0.7);// 視覺回饋：可以讓怪物的透明度變低或變色，讓玩家知道他被緩速了
 
                             // 建立一個兩秒後恢復顏色的計時器
                             Timeline recoverColor = new Timeline(new KeyFrame(Duration.seconds(2), event -> {

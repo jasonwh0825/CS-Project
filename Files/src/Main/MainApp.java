@@ -391,6 +391,18 @@ public class MainApp extends Application {
         startBtn.setPrefSize(180, 60);
         startBtn.setOnAction(e -> showGameScene());
 
+        Button fullScreenBtn = new Button(primaryStage.isFullScreen() ? "退出全螢幕 🗗" : "進入全螢幕 🖥️");
+        fullScreenBtn.setFont(Font.font("System", FontWeight.BOLD, 18));
+        fullScreenBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-background-radius: 15;");
+        fullScreenBtn.setPrefSize(180, 45);
+
+        primaryStage.fullScreenProperty().addListener((obs, oldVal, newVal) -> {
+            fullScreenBtn.setText(newVal ? "退出全螢幕 🗗" : "進入全螢幕 🖥️");
+        });
+        fullScreenBtn.setOnAction(e -> {
+            primaryStage.setFullScreen(!primaryStage.isFullScreen());
+        });
+
         Button logoutBtn = new Button("登出帳號 🚪");
         logoutBtn.setFont(Font.font("System", FontWeight.BOLD, 18));
         logoutBtn.setStyle("-fx-background-color: #FF9800; -fx-text-fill: white; -fx-background-radius: 15;");
@@ -406,17 +418,39 @@ public class MainApp extends Application {
             javafx.application.Platform.exit();
         });
 
-        menuButtonsBox.getChildren().addAll(startBtn, logoutBtn, exitBtn);
+        menuButtonsBox.getChildren().addAll(startBtn, fullScreenBtn, logoutBtn, exitBtn);
         AnchorPane.setBottomAnchor(menuButtonsBox, 20.0);
         AnchorPane.setRightAnchor(menuButtonsBox, 20.0);
         root.getChildren().addAll(userInfoBox, leaderboardPane, armoryBox, menuButtonsBox);
 
-        StackPane mainContainer = new StackPane(root);
-        primaryStage.setScene(new Scene(mainContainer, 800, 700));
+        // ⭐ 1. 把原本的選單裝進一個固定大小的容器 (800x700)
+        StackPane menuArea = new StackPane(root);
+        menuArea.setMaxSize(800, 700);
+        menuArea.setMinSize(800, 700);
 
-        // 升級彈窗檢查
+        // ⭐ 2. 建立最外層的黑邊容器 (用來填滿全螢幕的空白處)
+        StackPane rootContainer = new StackPane(menuArea);
+        rootContainer.setStyle("-fx-background-color: black;");
+
+        // ⭐ 3. 自動等比例縮放邏輯
+        javafx.beans.value.ChangeListener<Number> resizeListener = (obs, oldVal, newVal) -> {
+            if (rootContainer.getWidth() > 0 && rootContainer.getHeight() > 0) {
+                double scale = Math.min(rootContainer.getWidth() / 800.0, rootContainer.getHeight() / 700.0);
+                menuArea.setScaleX(scale);
+                menuArea.setScaleY(scale);
+            }
+        };
+        rootContainer.widthProperty().addListener(resizeListener);
+        rootContainer.heightProperty().addListener(resizeListener);
+
+        // ⭐ 4. 套用 Scene 並維持全螢幕狀態
+        boolean isFullScreen = primaryStage.isFullScreen();
+        primaryStage.setScene(new Scene(rootContainer, 800, 700));
+        primaryStage.setFullScreen(isFullScreen);
+
         if (currentAccountLevel > levelBeforeGame) {
-            showLevelUpNotification(mainContainer, currentAccountLevel);
+            // ⭐ 注意這裡的彈窗改加在 menuArea，這樣彈窗才會跟著放大！
+            showLevelUpNotification(menuArea, currentAccountLevel);
             levelBeforeGame = currentAccountLevel;
         }
     }
@@ -426,58 +460,165 @@ public class MainApp extends Application {
         primaryStage.setTitle("Project - 遊戲中");
 
         Pane gamePane = new Pane();
+        gamePane.setStyle("-fx-background-color: white;");
         GameLoop gameLoop = new GameLoop(gamePane, currentAccountLevel, (earnedExp) -> {
             addExpAndLevelUp(earnedExp);
             showMainMenuScene();
         });
 
-        Scene scene = new Scene(gamePane, 1000, 700);
-        scene.setOnMousePressed(event -> {
-            if (event.getX() < 800) {
+        // ==========================================
+        // 🛑 確認離開選單 & ⏸️ 暫停選單 (沿用之前的邏輯)
+        // ==========================================
+        VBox confirmExitOverlay = new VBox(25);
+        confirmExitOverlay.setAlignment(Pos.CENTER);
+        confirmExitOverlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.85);");
+        confirmExitOverlay.setVisible(false);
+
+        Label confirmTitle = new Label("確認離開戰場？");
+        confirmTitle.setTextFill(Color.RED);
+        confirmTitle.setFont(Font.font("System", FontWeight.BOLD, 40));
+
+        Label confirmDesc = new Label("現在離開的話，這場遊戲的經驗值都不會保留喔！\n(っ °Д °;)っ");
+        confirmDesc.setTextFill(Color.WHITE);
+        confirmDesc.setFont(Font.font("System", FontWeight.BOLD, 22));
+        confirmDesc.setAlignment(Pos.CENTER);
+        confirmDesc.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+
+        HBox confirmBtnsBox = new HBox(20);
+        confirmBtnsBox.setAlignment(Pos.CENTER);
+
+        Button yesBtn = new Button("確定離開");
+        yesBtn.setFont(Font.font("System", FontWeight.BOLD, 18));
+        yesBtn.setStyle("-fx-background-color: #d32f2f; -fx-text-fill: white; -fx-background-radius: 10;");
+        yesBtn.setPrefSize(160, 45);
+        yesBtn.setOnAction(e -> {
+            gameLoop.stop();
+            showMainMenuScene();
+        });
+
+        Button noBtn = new Button("點錯了，回去");
+        noBtn.setFont(Font.font("System", FontWeight.BOLD, 18));
+        noBtn.setStyle("-fx-background-color: #757575; -fx-text-fill: white; -fx-background-radius: 10;");
+        noBtn.setPrefSize(160, 45);
+
+        confirmBtnsBox.getChildren().addAll(yesBtn, noBtn);
+        confirmExitOverlay.getChildren().addAll(confirmTitle, confirmDesc, confirmBtnsBox);
+
+        VBox pauseOverlay = new VBox(30);
+        pauseOverlay.setAlignment(Pos.CENTER);
+        pauseOverlay.setStyle("-fx-background-color: rgba(0, 0, 0, 0.75);");
+        pauseOverlay.setVisible(false);
+
+        Label pauseLabel = new Label("遊戲暫停");
+        pauseLabel.setTextFill(Color.GOLD);
+        pauseLabel.setFont(Font.font("System", FontWeight.BOLD, 48));
+
+        Button continueBtn = new Button("繼續遊戲 ▶");
+        continueBtn.setFont(Font.font("System", FontWeight.BOLD, 22));
+        continueBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 10;");
+        continueBtn.setPrefSize(220, 50);
+        continueBtn.setOnAction(e -> {
+            pauseOverlay.setVisible(false);
+            gameLoop.start();
+        });
+
+        Button backToMenuBtn = new Button("回到主畫面 🏠");
+        backToMenuBtn.setFont(Font.font("System", FontWeight.BOLD, 20));
+        backToMenuBtn.setStyle("-fx-background-color: #d32f2f; -fx-text-fill: white; -fx-background-radius: 10;");
+        backToMenuBtn.setPrefSize(220, 50);
+        backToMenuBtn.setOnAction(e -> {
+            pauseOverlay.setVisible(false);
+            confirmExitOverlay.setVisible(true);
+        });
+
+        noBtn.setOnAction(e -> {
+            confirmExitOverlay.setVisible(false);
+            pauseOverlay.setVisible(true);
+        });
+
+        pauseOverlay.getChildren().addAll(pauseLabel, continueBtn, backToMenuBtn);
+
+        Button pauseBtn = new Button("⏸ 暫停");
+        pauseBtn.setFont(Font.font("System", FontWeight.BOLD, 16));
+        pauseBtn.setStyle("-fx-background-color: #555555; -fx-text-fill: white; -fx-background-radius: 5;");
+        pauseBtn.setLayoutX(900);
+        pauseBtn.setLayoutY(640);
+        pauseBtn.setOnAction(e -> {
+            gameLoop.stop();
+            pauseOverlay.setVisible(true);
+        });
+
+        gamePane.getChildren().add(pauseBtn);
+
+        // ==========================================
+        // ⭐ 全螢幕縮放核心邏輯
+        // ==========================================
+
+        // 1. 把遊戲畫面和選單疊進一個固定大小的 1000x700 容器
+        StackPane gameArea = new StackPane();
+        gameArea.setMaxSize(1000, 700);
+        gameArea.setMinSize(1000, 700);
+        gameArea.getChildren().addAll(gamePane, pauseOverlay, confirmExitOverlay);
+
+        // 2. 建立最外層黑邊容器
+        StackPane rootContainer = new StackPane(gameArea);
+        rootContainer.setStyle("-fx-background-color: black;");
+
+        // 3. 自動縮放邏輯
+        javafx.beans.value.ChangeListener<Number> resizeListener = (obs, oldVal, newVal) -> {
+            if (rootContainer.getWidth() > 0 && rootContainer.getHeight() > 0) {
+                double scale = Math.min(rootContainer.getWidth() / 1000.0, rootContainer.getHeight() / 700.0);
+                gameArea.setScaleX(scale);
+                gameArea.setScaleY(scale);
+            }
+        };
+        rootContainer.widthProperty().addListener(resizeListener);
+        rootContainer.heightProperty().addListener(resizeListener);
+
+        // 4. 切換 Scene 並維持全螢幕狀態
+        boolean isFullScreen = primaryStage.isFullScreen();
+        Scene scene = new Scene(rootContainer, 1000, 700);
+        primaryStage.setScene(scene);
+        primaryStage.setFullScreen(isFullScreen);
+
+        // ==========================================
+        // 🖱️ 滑鼠與鍵盤事件
+        // ==========================================
+
+        // ⭐ 注意：滑鼠事件改綁在 gameArea 上！這樣 event.getX() 才會自動縮放換算
+        gameArea.setOnMousePressed(event -> {
+            if (!pauseOverlay.isVisible() && !confirmExitOverlay.isVisible() && event.getX() < 800) {
                 gameLoop.setShootingState(true, event.getX(), event.getY());
             }
         });
-        scene.setOnMouseDragged(event -> {
-            if (event.getX() < 800) {
+        gameArea.setOnMouseDragged(event -> {
+            if (!pauseOverlay.isVisible() && !confirmExitOverlay.isVisible() && event.getX() < 800) {
                 gameLoop.updateMousePosition(event.getX(), event.getY());
             }
         });
-        scene.setOnMouseReleased(event -> {
-            gameLoop.setShootingState(false, event.getX(), event.getY());
-        });
-        scene.setOnKeyReleased(event -> {
-            switch (event.getCode()) {
-                case SPACE:
-                    gameLoop.castUltimate();
-                    break;
-                case DIGIT1:
-                    gameLoop.switchWeapon(WeaponType.NORMAL);
-                    break;
-                case DIGIT2:
-                    gameLoop.switchWeapon(WeaponType.SPEED_DOWN);
-                    break;
-                case DIGIT3:
-                    gameLoop.switchWeapon(WeaponType.ICE);
-                    break;
-                case DIGIT4:
-                    gameLoop.switchWeapon(WeaponType.HEAVY);
-                    break;
-                case DIGIT5:
-                    gameLoop.switchWeapon(WeaponType.HEAL);
-                    break;
-                case DIGIT6:
-                    gameLoop.switchWeapon(WeaponType.FIRE);
-                    break;
-                case Q:
-                    gameLoop.atklevelup();
-                    break;
-                case E:
-                    gameLoop.hplevelup();
-                    break;
+        gameArea.setOnMouseReleased(event -> {
+            if (!pauseOverlay.isVisible() && !confirmExitOverlay.isVisible()) {
+                gameLoop.setShootingState(false, event.getX(), event.getY());
             }
         });
 
-        primaryStage.setScene(scene);
+        // 鍵盤事件不用座標，所以還是綁在 scene 上
+        scene.setOnKeyReleased(event -> {
+            if (pauseOverlay.isVisible() || confirmExitOverlay.isVisible()) return;
+
+            switch (event.getCode()) {
+                case SPACE: gameLoop.castUltimate(); break;
+                case DIGIT1: if (WeaponType.NORMAL.isUnlocked(currentAccountLevel)) gameLoop.switchWeapon(WeaponType.NORMAL); break;
+                case DIGIT2: if (WeaponType.ICE.isUnlocked(currentAccountLevel)) gameLoop.switchWeapon(WeaponType.ICE); break;
+                case DIGIT3: if (WeaponType.HEAVY.isUnlocked(currentAccountLevel)) gameLoop.switchWeapon(WeaponType.HEAVY); break;
+                case DIGIT4: if (WeaponType.HEAL.isUnlocked(currentAccountLevel)) gameLoop.switchWeapon(WeaponType.HEAL); break;
+                case DIGIT5: if (WeaponType.FIRE.isUnlocked(currentAccountLevel)) gameLoop.switchWeapon(WeaponType.FIRE); break;
+                case DIGIT6: if (WeaponType.SPEED_DOWN.isUnlocked(currentAccountLevel)) gameLoop.switchWeapon(WeaponType.SPEED_DOWN); break;
+                case Q: gameLoop.atklevelup(); break;
+                case E: gameLoop.hplevelup(); break;
+            }
+        });
+
         gameLoop.start();
     }
 

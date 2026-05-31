@@ -1,5 +1,7 @@
 package engine;
 
+import javafx.scene.control.ProgressBar;
+import javafx.scene.layout.HBox;
 import engine.entity.Bullet;
 import engine.entity.Castle;
 import engine.entity.enemy.*;
@@ -29,6 +31,9 @@ import javafx.scene.text.FontWeight;
 import static engine.entity.WeaponType.*;
 
 public class GameLoop extends AnimationTimer {
+    private ProgressBar hpBar, energyBar;
+    private Label hpNumLabel, energyNumLabel;
+    private Label waveLabel, killLabel, weaponLabel, goldLabel, expLabel;
     private Consumer<Double> onReturnToMenu;
     private Pane gamePane;
     public Castle castle;
@@ -419,38 +424,6 @@ public class GameLoop extends AnimationTimer {
         }
     }
 
-    private void updateUI() {
-        // 計算目前的難度倍率
-        double difficulty = 1.0 + (currentWave - 1) * 0.5;
-
-        // 確保包含了：波數、難度、金幣、經驗、能量、武器、擊殺、HP
-        hudLabel.setText(String.format(
-                "【 第 %d 波 】\n" +
-                        " 難度: %.1f 倍\n\n" +
-                        " 金幣: %.0f g\n\n" +
-                        " 經驗: %.0f exp\n\n" +  // <-- 經驗值回來了！
-                        " 能量: %.1f%%\n\n" +
-                        " 武器: %s\n\n" +
-                        " 擊殺: %d 隻\n\n" +
-                        " 血量: %.0f / %.0f",
-                currentWave,
-                difficulty,
-                castle.getGold(),
-                castle.getExp(),        // 對應 castle.getExp()
-                castle.getUltEnergy(),
-                currentWeapon.getName(),
-                killCount,
-                castle.getHp(),
-                castle.getMaxHp()
-        ));
-
-        // 升級按鈕邏輯保持不變
-        atkUpgradeBtn.setText(String.format("升級攻擊 (Lv.%d): %.0fg", castle.getAtkLevel(), castle.getAtkUpgradeCost()));
-        hpUpgradeBtn.setText(String.format("增加血量 (Lv.%d): %.0fg", castle.getHpLevel(), castle.getHpUpgradeCost()));
-        atkUpgradeBtn.setDisable(castle.getGold() < castle.getAtkUpgradeCost());
-        hpUpgradeBtn.setDisable(castle.getGold() < castle.getHpUpgradeCost());
-    }
-
     private void spawnNormalEnemy() {
         double rx = Math.random() * 650 + 50;
         int type = (int)(Math.random() * 3);
@@ -500,39 +473,129 @@ public class GameLoop extends AnimationTimer {
     }
 
     private void initHUD() {
-        Rectangle sidebarBg = new Rectangle(200, 700, Color.web("#2c3e50")); // 深灰色側欄背景
+        // 1. 右側深色背景
+        Rectangle sidebarBg = new Rectangle(200, 700, Color.web("#2c3e50"));
         sidebarBg.setX(800);
-        gamePane.getChildren().add(sidebarBg);
-        hudLabel = new Label();
-        hudLabel.setFont(new Font(16)); // 16 號字大小剛剛好
-        hudLabel.setTranslateX(815);    // 移到右側側欄起點
-        hudLabel.setTranslateY(20);     // 從上方 20 像素開始往下排
-        hudLabel.setTextFill(Color.WHITE); // 如果你加了深色側欄背景，字體改白色會很清晰
-        gamePane.getChildren().add(hudLabel);
+        sidebarBg.setViewOrder(-1); // ⭐ 強制推到最上層
+        gamePane.getChildren().add(sidebarBg); // 確保只 add 這一此
+
+        // 2. 左上角：血量與能量條
+        VBox topBarBox = new VBox(15);
+        topBarBox.setTranslateX(15);
+        topBarBox.setTranslateY(15);
+
+        // 血條 HBox
+        HBox hpBox = new HBox(10);
+        hpBox.setAlignment(Pos.CENTER_LEFT);
+        Label hpTitle = new Label("血量");
+        hpTitle.setFont(Font.font("System", FontWeight.BOLD, 18));
+        hpTitle.setTextFill(Color.BLACK);
+
+        hpBar = new ProgressBar(1.0);
+        hpBar.setPrefSize(200, 20);
+        hpBar.setStyle("-fx-accent: #ff4d4d; -fx-control-inner-background: #eeeeee; -fx-box-border: #000000;");
+
+        hpNumLabel = new Label("?/?");
+        hpNumLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
+        hpNumLabel.setTextFill(Color.BLACK);
+        hpBox.getChildren().addAll(hpTitle, hpBar, hpNumLabel);
+
+        // 能量條 HBox
+        HBox energyBox = new HBox(10);
+        energyBox.setAlignment(Pos.CENTER_LEFT);
+        Label energyTitle = new Label("能量");
+        energyTitle.setFont(Font.font("System", FontWeight.BOLD, 18));
+        energyTitle.setTextFill(Color.BLACK);
+
+        energyBar = new ProgressBar(0.0);
+        energyBar.setPrefSize(200, 20);
+        energyBar.setStyle("-fx-accent: #00BFFF; -fx-control-inner-background: #eeeeee; -fx-box-border: #000000;");
+
+        energyNumLabel = new Label("?%");
+        energyNumLabel.setFont(Font.font("System", FontWeight.BOLD, 16));
+        energyNumLabel.setTextFill(Color.BLACK);
+        energyBox.getChildren().addAll(energyTitle, energyBar, energyNumLabel);
+
+        topBarBox.getChildren().addAll(hpBox, energyBox);
+        topBarBox.setViewOrder(-1); // ⭐ 強制推到最上層
+        gamePane.getChildren().add(topBarBox); // 確保只 add 這一此
+
+        // 3. 右側欄資訊：波數、擊殺、武器、金幣、經驗
+        VBox rightStatsBox = new VBox(25);
+        rightStatsBox.setTranslateX(815);
+        rightStatsBox.setTranslateY(30);
+
+        waveLabel = createSidebarLabel("第 ? 波", 28);
+        killLabel = createSidebarLabel("擊殺: ? 隻", 20);
+        weaponLabel = createSidebarLabel("武器: ???", 20);
+        goldLabel = createSidebarLabel("$: ?????", 22);
+        goldLabel.setTextFill(Color.GOLD);
+        expLabel = createSidebarLabel("Exp: ?????", 22);
+        expLabel.setTextFill(Color.LIGHTGREEN);
+
+        rightStatsBox.getChildren().addAll(waveLabel, killLabel, weaponLabel, goldLabel, expLabel);
+        rightStatsBox.setViewOrder(-1); // ⭐ 強制推到最上層
+        gamePane.getChildren().add(rightStatsBox); // 確保只 add 這一此
+    }
+
+    // 建立側邊欄文字的小幫手
+    private Label createSidebarLabel(String text, int fontSize) {
+        Label lbl = new Label(text);
+        lbl.setFont(Font.font("System", FontWeight.BOLD, fontSize));
+        lbl.setTextFill(Color.WHITE);
+        return lbl;
     }
 
     private void initUpgradeUI() {
-        upgradePanel = new VBox(20);
-        upgradePanel.setTranslateX(810);
-        upgradePanel.setTranslateY(350);
+        HBox upgradeBox = new HBox(10);
+        upgradeBox.setTranslateX(815);
+        upgradeBox.setTranslateY(450);
 
         atkUpgradeBtn = new Button();
         hpUpgradeBtn = new Button();
-        atkUpgradeBtn.setPrefWidth(180);
-        hpUpgradeBtn.setPrefWidth(180);
+
+        atkUpgradeBtn.setPrefSize(80, 85);
+        hpUpgradeBtn.setPrefSize(80, 85);
+
+        String btnStyle = "-fx-background-color: #ecf0f1; -fx-text-fill: #2c3e50; -fx-font-weight: bold; -fx-font-size: 14px; -fx-background-radius: 8;";
+        atkUpgradeBtn.setStyle(btnStyle);
+        hpUpgradeBtn.setStyle(btnStyle);
+
+        atkUpgradeBtn.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
+        hpUpgradeBtn.setTextAlignment(javafx.scene.text.TextAlignment.CENTER);
 
         atkUpgradeBtn.setOnAction(e -> castle.upgradeAttack());
         hpUpgradeBtn.setOnAction(e -> castle.upgradeMaxHp());
-
-        // 【重點檢查】：確保只有下面這一行在添加按鈕，不要有其他的 addAll 或是 add
-        Label titleLabel = new Label("--- 基地強化 ---");
-        titleLabel.setTextFill(Color.WHITE); // 如果背景是深色，字體可以改白色
-        upgradePanel.getChildren().addAll(titleLabel, atkUpgradeBtn, hpUpgradeBtn);
-
-        gamePane.getChildren().add(upgradePanel);
-
         atkUpgradeBtn.setFocusTraversable(false);
         hpUpgradeBtn.setFocusTraversable(false);
+
+        upgradeBox.getChildren().addAll(atkUpgradeBtn, hpUpgradeBtn);
+        upgradeBox.setViewOrder(-1); // ⭐ 強制推到最上層
+        gamePane.getChildren().add(upgradeBox); // 確保只 add 這一此
+    }
+
+    private void updateUI() {
+        // 1. 更新左上角進度條
+        hpBar.setProgress(castle.getHp() / castle.getMaxHp());
+        hpNumLabel.setText(String.format("%.0f/%.0f", castle.getHp(), castle.getMaxHp()));
+
+        energyBar.setProgress(castle.getUltEnergy() / 100.0);
+        energyNumLabel.setText(String.format("%.1f%%", castle.getUltEnergy()));
+
+        // 2. 更新右側欄資訊
+        waveLabel.setText(String.format("第 %d 波", currentWave));
+        killLabel.setText(String.format("擊殺: %d 隻", killCount));
+        weaponLabel.setText(String.format("武器:\n%s", currentWeapon.getName()));
+        goldLabel.setText(String.format("$: %.0f", castle.getGold()));
+        expLabel.setText(String.format("Exp: %.0f", castle.getExp()));
+
+        // 3. 更新升級按鈕文字
+        atkUpgradeBtn.setText(String.format("攻擊\nLv.%d\n$%.0f", castle.getAtkLevel(), castle.getAtkUpgradeCost()));
+        hpUpgradeBtn.setText(String.format("血量\nLv.%d\n$%.0f", castle.getHpLevel(), castle.getHpUpgradeCost()));
+
+        // 4. 判斷錢夠不夠
+        atkUpgradeBtn.setDisable(castle.getGold() < castle.getAtkUpgradeCost());
+        hpUpgradeBtn.setDisable(castle.getGold() < castle.getHpUpgradeCost());
     }
 
     private void showGameOverScreen() {

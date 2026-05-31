@@ -196,9 +196,9 @@ public class MainApp extends Application {
     }
 
     public void showRegisterScene() {
-        VBox root = new VBox(20);
-        root.setAlignment(Pos.CENTER);
-        root.setStyle("-fx-background-color: #2b2b2b; -fx-padding: 50;");
+        VBox registerContent = new VBox(20);
+        registerContent.setAlignment(Pos.CENTER);
+        registerContent.setStyle("-fx-background-color: #2b2b2b; -fx-padding: 50;");
 
         Label title = new Label("創建新帳號");
         title.setTextFill(Color.LIGHTGREEN);
@@ -228,39 +228,54 @@ public class MainApp extends Application {
         grid.add(confirmLabel, 0, 2);
         grid.add(confirmField, 1, 2);
 
+        // ⭐ 準備 StackPane，用來承載背景與飄動動畫
+        StackPane mainContainer = new StackPane();
+
         HBox btnBox = new HBox(20);
         btnBox.setAlignment(Pos.CENTER);
 
         Button createBtn = new Button("創建");
         createBtn.setStyle("-fx-background-color: #2196F3; -fx-text-fill: white; -fx-font-size: 16px; -fx-font-weight: bold;");
+        createBtn.setFocusTraversable(false); // 避免空白鍵誤觸
         createBtn.setOnAction(e -> {
             String u = userField.getText().trim();
             String p1 = passField.getText();
             String p2 = confirmField.getText();
 
+            // ⭐ 全面改用 Floating 動畫！
             if (u.isEmpty() || p1.isEmpty()) {
-                showAlert("錯誤", "欄位不能為空！");
+                showFloatingWarning(mainContainer, "欄位不能為空！");
             } else if (userDatabase.containsKey(u)) {
-                showAlert("錯誤", "這個使用者名稱已經被註冊過了！");
+                showFloatingWarning(mainContainer, "這個使用者名稱已經被註冊過了！");
             } else if (!p1.equals(p2)) {
-                showAlert("錯誤", "兩次密碼輸入不一致！");
+                showFloatingWarning(mainContainer, "兩次密碼輸入不一致！");
             } else {
-                // 註冊成功，預設 1 等，0 經驗
+                // 註冊成功
                 userDatabase.put(u, new UserAccount(u, p1, 1, 0.0));
-                saveUserData(); // 立刻寫入 txt
-                showAlert("成功", "帳號創建成功，請重新登入！");
-                showLoginScene();
+                saveUserData();
+
+                // 呼叫綠色的成功動畫
+                showFloatingSuccess(mainContainer, "帳號創建成功，請重新登入！");
+
+                // ⭐ 使用 PauseTransition 延遲 2 秒再切換畫面，讓玩家把成功動畫看完
+                javafx.animation.PauseTransition pause = new javafx.animation.PauseTransition(Duration.seconds(2));
+                pause.setOnFinished(event -> showLoginScene());
+                pause.play();
             }
         });
 
         Button backBtn = new Button("返回");
         backBtn.setStyle("-fx-background-color: #757575; -fx-text-fill: white; -fx-font-size: 16px;");
+        backBtn.setFocusTraversable(false); // 避免空白鍵誤觸
         backBtn.setOnAction(e -> showLoginScene());
 
         btnBox.getChildren().addAll(createBtn, backBtn);
+        registerContent.getChildren().addAll(title, grid, btnBox);
 
-        root.getChildren().addAll(title, grid, btnBox);
-        primaryStage.setScene(new Scene(root, 800, 700));
+        // 將註冊畫面內容加到 StackPane 底部
+        mainContainer.getChildren().add(registerContent);
+
+        primaryStage.setScene(new Scene(mainContainer, 800, 700));
     }
 
     private void showAlert(String title, String content) {
@@ -661,6 +676,27 @@ public class MainApp extends Application {
         parallelTransition.setOnFinished(e -> rootContainer.getChildren().remove(warningLabel));
 
         // 播放動畫！
+        parallelTransition.play();
+    }
+
+    private void showFloatingSuccess(StackPane rootContainer, String message) {
+        Label successLabel = new Label(message);
+        successLabel.setFont(Font.font("System", FontWeight.BOLD, 24));
+        successLabel.setTextFill(Color.LIGHTGREEN); // 成功改成漂亮的亮綠色
+        successLabel.setStyle("-fx-background-color: rgba(0,0,0,0.7); -fx-padding: 15px; -fx-background-radius: 10px;");
+
+        successLabel.setTranslateY(50);
+        rootContainer.getChildren().add(successLabel);
+
+        FadeTransition fade = new FadeTransition(Duration.seconds(2), successLabel);
+        fade.setFromValue(1.0);
+        fade.setToValue(0.0);
+
+        TranslateTransition translate = new TranslateTransition(Duration.seconds(2), successLabel);
+        translate.setByY(-80);
+
+        ParallelTransition parallelTransition = new ParallelTransition(fade, translate);
+        parallelTransition.setOnFinished(e -> rootContainer.getChildren().remove(successLabel));
         parallelTransition.play();
     }
 

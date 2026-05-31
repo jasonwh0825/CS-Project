@@ -194,7 +194,7 @@ public class GameLoop extends AnimationTimer {
     }
 
     // 在畫面上顯示一個會往上飄並消失的警告文字
-    private void showWarningMessage(String message) {
+    public void showWarningMessage(String message) {
         Label warningLabel = new Label(message);
         warningLabel.setFont(Font.font("System", FontWeight.BOLD, 24));
         warningLabel.setTextFill(Color.RED);

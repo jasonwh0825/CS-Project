@@ -25,7 +25,7 @@ public class Bullet extends Entity {
                                 (weaponType == WeaponType.ICE ? Color.CYAN :
                                         (weaponType==WeaponType.HEAL ? Color.GREEN :
                                                 (weaponType==WeaponType.FIRE ? Color.RED :
-                                                        (weaponType==WeaponType.SPEED_DOWN ? Color.PURPLE:Color.YELLOW))))),
+                                                        (weaponType==WeaponType.SPEED_DOWN ? Color.PURPLE:Color.DARKSALMON))))),
                 startX, startY, 1);
         this.targetX = targetX;
         this.targetY = targetY;

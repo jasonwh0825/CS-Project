@@ -154,6 +154,7 @@ public class BossEnemy extends Enemy {
             double spawnX = Math.max(0, Math.min(780, this.getX() + offsetX));
 
             Enemy minion = new MeleeEnemy(spawnX, this.getY());
+            minion.setSummoned(true);
             setupMinionAppearance(minion);
             minion.enhanceStats(0.5 + (wave * 0.1));
             onSpawnMinion.accept(minion);

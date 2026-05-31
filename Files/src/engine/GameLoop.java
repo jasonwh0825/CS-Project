@@ -261,6 +261,12 @@ public class GameLoop extends AnimationTimer {
 
     @Override
     public void handle(long now) {
+
+        if (castle.getHp() <= 0) {
+            checkGameOver();
+            return;
+        }
+
         if (isGameOver) return;
         frameCount++;
 
@@ -306,16 +312,16 @@ public class GameLoop extends AnimationTimer {
             // 2. 判斷死亡或是碰到主堡
             if (e.isDead() || e.getY() >= castle.getY() - 20) {
                 if (e.getY() >= castle.getY() - 20) {
-                    // 怪物撞到主堡，主堡扣除對應攻擊力的血量
                     castle.takeDamage(e.getBaseDamage());
+                    checkGameOver();
                 } else {
-                    // 怪物被擊殺
-                    killCount++;
-                    castle.addReward(e.getRewardGold(), e.getRewardExp()); // 正常給予獎勵
+                    if (!e.isSummoned()) {
+                        killCount++;
+                    }
+                    castle.addReward(e.getRewardGold(), e.getRewardExp());
 
-                    // 【修正】直接比對 Enum，且確認血量未滿時才補血
                     if (currentWeapon == WeaponType.HEAL && castle.getHp() < castle.getMaxHp()) {
-                        castle.takeDamage(-5 * castle.getAtkLevel()); // 補血邏輯
+                        castle.takeDamage(-5 * castle.getAtkLevel());
                     }
                 }
 
@@ -374,6 +380,7 @@ public class GameLoop extends AnimationTimer {
                     if (b.getSprite().getBoundsInParent().intersects(e.getSprite().getBoundsInParent())) {
                         // 1. 造成傷害
                         e.takeDamage(b.getDamage());
+                        e.playHitFlash();
 
                         // 2. 處理武器特殊效果
 
@@ -452,7 +459,7 @@ public class GameLoop extends AnimationTimer {
                 (bullet) -> {
                     // 處理發射的子彈
                     bullets.add(bullet);
-                    gamePane.getChildren().add(bullet.getSprite());
+                    Platform.runLater(() -> gamePane.getChildren().add(bullet.getSprite()));
                 }
         );
 
@@ -470,10 +477,17 @@ public class GameLoop extends AnimationTimer {
     }
 
     private void checkGameOver() {
-        if (castle.isDead() && !isGameOver) {
+        // 1. 強制用數值判斷，避免 isDead 狀態機延遲
+        if (castle.getHp() <= 0 && !isGameOver) {
             isGameOver = true;
-            this.stop();
-            showGameOverScreen();
+            System.out.println("DEBUG: 觸發 GameOver 邏輯！"); // 這裡請加一行 Print 確認有跑進來
+
+            this.stop(); // 停止計時器
+
+            // 2. 關鍵：AnimationTimer 停止時，UI 更新建議放進 Platform.runLater
+            Platform.runLater(() -> {
+                showGameOverScreen();
+            });
         }
     }
 
@@ -604,55 +618,50 @@ public class GameLoop extends AnimationTimer {
     }
 
     private void showGameOverScreen() {
-        VBox box = new VBox(25); // 稍微增加間距
+        // 1. 建立容器
+        VBox box = new VBox(30);
         box.setAlignment(Pos.CENTER);
-        // 這裡的背景遮罩維持深色半透明，這樣在白色遊戲背景上會非常醒目
-        box.setStyle("-fx-background-color: rgba(0,0,0,0.85);");
-        box.setPrefSize(1000, 700);
 
+        // 2. 設定背景 (不要只設定 PrefSize，連 MinSize 都設定)
+        box.setMinWidth(1000);
+        box.setMinHeight(700);
+        box.setStyle("-fx-background-color: rgba(0, 0, 0, 0.85);"); // 深黑透明感
+
+        // 3. 強制定位：確保它從 (0,0) 開始畫，不會因為佈局跑掉
+        box.setLayoutX(0);
+        box.setLayoutY(0);
+
+        // 4. 設定層級 (保險起見還是設定極小值)
+        box.setViewOrder(-100.0);
+
+        // 文字部分
         Label l = new Label("GAME OVER");
-        l.setFont(Font.font("System", FontWeight.BOLD, 60)); // 加粗並放大
+        l.setFont(Font.font("System", FontWeight.BOLD, 80));
         l.setTextFill(Color.RED);
 
-        // 顯示獲得的經驗值
-        Label expLabel = new Label("獲得經驗值: " + (int)castle.getExp() + " EXP");
-        expLabel.setFont(Font.font("System", FontWeight.BOLD, 30));
+        Label expLabel = new Label("本次戰鬥獲得: " + (int)castle.getExp() + " EXP");
+        expLabel.setFont(Font.font("System", FontWeight.BOLD, 32));
         expLabel.setTextFill(Color.GOLD);
 
-        // ==========================================
-        // ✨ 重新設計的按鈕 (對齊開始遊戲風格)
-        // ==========================================
+        // 按鈕部分
         Button r = new Button("結算並返回首頁");
-
-        // 設定字體 (對齊開始遊戲的 BOLD 24)
+        r.setPrefSize(300, 80);
         r.setFont(Font.font("System", FontWeight.BOLD, 24));
-
-        // 設定樣式：使用與開始遊戲相似的綠色，並加上圓角與手型游標
-        // 如果你希望更像「結束」的感覺，也可以把 #4CAF50 (綠) 改成 #FF9800 (橘)
-        r.setStyle(
-                "-fx-background-color: #4CAF50; " +
-                        "-fx-text-fill: white; " +
-                        "-fx-background-radius: 15; " +
-                        "-fx-cursor: hand; " +
-                        "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 0);"
-        );
-
-        // 設定按鈕大小 (參考開始遊戲的 180x60，因為字較多，寬度稍微拉長到 240)
-        r.setPrefSize(240, 60);
-
-        // 滑鼠懸停效果：讓按鈕互動感更好
-        r.setOnMouseEntered(e -> r.setStyle("-fx-background-color: #45a049; -fx-text-fill: white; -fx-background-radius: 15; -fx-cursor: hand;"));
-        r.setOnMouseExited(e -> r.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 15;"));
+        r.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 20; -fx-cursor: hand;");
 
         r.setOnAction(e -> {
-            this.stop();
             if (onReturnToMenu != null) {
                 onReturnToMenu.accept(castle.getExp());
             }
         });
 
         box.getChildren().addAll(l, expLabel, r);
+
+        // 5. 將面板加入 gamePane，並強制呼叫 toFront()
         gamePane.getChildren().add(box);
+        box.toFront();
+
+        System.out.println("DEBUG: GameOver 面板已加入 gamePane");
     }
 
     private void restartGame(VBox box) {

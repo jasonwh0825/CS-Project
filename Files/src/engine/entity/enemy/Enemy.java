@@ -3,7 +3,14 @@ package engine.entity.enemy;
 import engine.entity.Castle;
 import engine.entity.Entity;
 import engine.entity.Bullet;
+import javafx.animation.PauseTransition;
+import javafx.animation.ScaleTransition;
 import javafx.scene.Node;
+import javafx.scene.effect.ColorAdjust;
+import javafx.scene.effect.DropShadow;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Shape;
+import javafx.util.Duration;
 
 public abstract class Enemy extends Entity {
     protected double speed;
@@ -13,6 +20,8 @@ public abstract class Enemy extends Entity {
     protected int stunTimer = 0;
     private double speedMultiplier = 1.0;
     private int slowTimer = 0;
+    private boolean isSummoned = false;
+    private double originalWidth = -1;
 
     public Enemy(Node sprite, double x, double y, double maxHp, double speed, double rewardGold, double rewardExp , double baseDamage) {
         super(sprite, x, y, maxHp);
@@ -20,6 +29,61 @@ public abstract class Enemy extends Entity {
         this.rewardGold = rewardGold;
         this.rewardExp = rewardExp;
         this.baseDamage = baseDamage;
+
+        applyEnemyEffects();
+    }
+
+    @Override
+    public void syncHpBar() {
+        if (hpBar == null || sprite == null) return;
+
+        // 不要用 getBoundsInLocal().getWidth()，因為動畫會干擾它
+        // 直接根據怪物類型給予固定寬度
+        double barWidth = (this instanceof BossEnemy) ? 100 : 50;
+
+        double percent = Math.max(0, hp / maxHp);
+        hpBar.setWidth(barWidth * percent);
+
+        // 位置同步：放在怪物頭頂上 10 像素
+        hpBar.setTranslateX(sprite.getTranslateX());
+        hpBar.setTranslateY(sprite.getTranslateY() - 15);
+        hpBarBg.setTranslateX(sprite.getTranslateX());
+        hpBarBg.setTranslateY(sprite.getTranslateY() - 15);
+    }
+
+    private void applyEnemyEffects() {
+        if (this.sprite instanceof Shape) {
+            Shape s = (Shape) this.sprite;
+
+            // --- 方案 A: 立體陰影 ---
+            DropShadow shadow = new DropShadow();
+            shadow.setRadius(10);
+            shadow.setOffsetY(5);
+            shadow.setColor(Color.color(0, 0, 0, 0.4));
+            s.setEffect(shadow);
+
+            // --- 方案 B: 出生彈出動畫 (Pop-in) ---
+            s.setScaleX(0);
+            s.setScaleY(0);
+            ScaleTransition pop = new ScaleTransition(Duration.millis(300), s);
+            pop.setToX(1.0);
+            pop.setToY(1.0);
+            pop.play();
+        }
+    }
+
+    public void playHitFlash() {
+        ColorAdjust flash = new ColorAdjust();
+        flash.setBrightness(0.7);
+
+        Node s = this.sprite;
+        javafx.scene.effect.Effect originalEffect = s.getEffect();
+        flash.setInput(originalEffect);
+        s.setEffect(flash);
+
+        PauseTransition pause = new PauseTransition(Duration.millis(100));
+        pause.setOnFinished(e -> s.setEffect(originalEffect));
+        pause.play();
     }
 
     // ==========================================
@@ -47,6 +111,9 @@ public abstract class Enemy extends Entity {
 
     public double getRewardGold() { return rewardGold; }
     public double getRewardExp() { return rewardExp; }
+    public boolean isSummoned() {return isSummoned;}
+
+    public void setSummoned(boolean summoned) {isSummoned = summoned;}
 
     public void enhanceStats(double multiplier) {
         this.maxHp *= multiplier;

@@ -568,6 +568,7 @@ public class MainApp extends Application {
         pauseBtn.setStyle("-fx-background-color: #555555; -fx-text-fill: white; -fx-background-radius: 5;");
         pauseBtn.setLayoutX(900);
         pauseBtn.setLayoutY(640);
+        pauseBtn.setViewOrder(-2);
         pauseBtn.setOnAction(e -> {
             gameLoop.stop();
             pauseOverlay.setVisible(true);

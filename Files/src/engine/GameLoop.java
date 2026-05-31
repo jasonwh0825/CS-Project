@@ -442,18 +442,23 @@ public class GameLoop extends AnimationTimer {
     private void spawnBoss() {
         isBossActive = true;
 
-        // 1. 建立隨機 Boss，傳入：座標、目前波數、以及處理小怪生成的邏輯 (Lambda)
-        BossEnemy boss = new BossEnemy(Math.random() * 600 + 100, -100, currentWave, (minion) -> {
-            // 當 Boss (例如母體) 產生小怪時，會呼叫這裡
-            pendingEnemies.add(minion);
-            gamePane.getChildren().add(minion.getSprite());
-        });
+        // ⭐ 這裡多傳入一個 Lambda，用來接收 BOSS 發射出來的子彈
+        BossEnemy boss = new BossEnemy(Math.random() * 600 + 100, -100, currentWave,
+                (minion) -> {
+                    // 處理召喚的小怪
+                    pendingEnemies.add(minion);
+                    gamePane.getChildren().add(minion.getSprite());
+                },
+                (bullet) -> {
+                    // 處理發射的子彈
+                    bullets.add(bullet);
+                    gamePane.getChildren().add(bullet.getSprite());
+                }
+        );
 
-        // 2. 將 Boss 加入清單與畫面上
         enemies.add(boss);
         gamePane.getChildren().add(boss.getSprite());
 
-        // 3. 觸發警告文字動畫 (你已經寫好的方法)
         showWarningMessage("⚠️ 警告！【" + boss.getBossName() + "】來襲！");
     }
 

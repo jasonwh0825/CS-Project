@@ -12,33 +12,36 @@ import javafx.scene.shape.Shape;
 public class BossEnemy extends Enemy {
 
     public enum BossType {
-        NORMAL,         // 原本的 Boss
-        SWARM_MOTHER,   // 蜂群母體 (召喚型)
-        VOID_BLINKER    // 虛空行者 (閃現型)
+        NORMAL,         // 多重彈幕型
+        SWARM_MOTHER,   // 蜂群母體 (召喚型 + 單發子彈)
+        VOID_BLINKER    // 虛空行者 (閃現型 + 單發子彈)
     }
 
     private BossType type;
     private int wave;
-    private int actionTimer = 0;
-    private Consumer<Enemy> onSpawnMinion;
 
-    // 原本 Boss 專用變數
-    private int attackCooldown = 0;
+    private Consumer<Enemy> onSpawnMinion;
+    private Consumer<Bullet> onShoot; // ⭐ 新增：用來發射(多發)子彈
+
+    private int skillTimer = 0;       // 特殊技能計時器
+    private int shootTimer = 0;       // 射擊計時器
     private boolean isEnraged = false;
 
-    public BossEnemy(double x, double y, int wave, Consumer<Enemy> onSpawnMinion) {
+    // ⭐ 建構子多加了一個 Consumer<Bullet>
+    public BossEnemy(double x, double y, int wave, Consumer<Enemy> onSpawnMinion, Consumer<Bullet> onShoot) {
         super(
                 new javafx.scene.shape.Rectangle(100, 100, Color.DARKRED),
                 x, y,
                 500 + (wave * 250),   // hp
                 0.5 + (wave * 0.05),  // speed
-                500 + (wave * 100),  // rewardGold
-                200 + (wave * 50),   // rewardExp
-                30 + (wave * 10)     // baseDamage
+                500 + (wave * 100),   // rewardGold
+                200 + (wave * 50),    // rewardExp
+                30 + (wave * 10)      // baseDamage
         );
 
         this.wave = wave;
         this.onSpawnMinion = onSpawnMinion;
+        this.onShoot = onShoot; // 綁定發射子彈的通道
 
         int randomPick = (int) (Math.random() * 3);
         this.type = BossType.values()[randomPick];
@@ -63,54 +66,84 @@ public class BossEnemy extends Enemy {
     public Bullet updateBehavior(Castle castle) {
         // 基本移動
         setY(getY() + getActualSpeed());
-        actionTimer++;
 
+        skillTimer++;
+        shootTimer++;
+
+        // 1. 狂暴判定 (NORMAL 專屬加速)
+        if (type == BossType.NORMAL && !isEnraged && this.hp < (this.maxHp / 2)) {
+            isEnraged = true;
+            this.speed *= 1.5;
+            setSpriteColor(Color.ORANGERED);
+        }
+
+        // 2. ⭐ 共通射擊邏輯 (所有 BOSS 都會開火)
+        int shootInterval = (isEnraged && type == BossType.NORMAL) ? 60 : 90; // 狂暴時射更快
+        if (shootTimer >= shootInterval) {
+            performShoot(castle);
+            shootTimer = 0;
+        }
+
+        // 3. ⭐ 特殊技能邏輯 (大幅提高頻率)
         switch (type) {
-            case NORMAL:
-                // 執行原本 Boss 的專屬邏輯 (狂暴 + 射擊)
-                return handleOriginalBossLogic(castle);
-
             case SWARM_MOTHER:
-                // 只有這裡會產生 MeleeEnemy
-                int spawnInterval = Math.max(120, 300 - (wave * 15));
-                if (actionTimer >= spawnInterval) {
+                // 召喚頻率提高：最短約 1 秒 (60幀) 召喚一次
+                int spawnInterval = Math.max(60, 150 - (wave * 10));
+                if (skillTimer >= spawnInterval) {
                     spawnMinions();
-                    actionTimer = 0;
+                    skillTimer = 0;
                 }
                 break;
 
             case VOID_BLINKER:
-                int blinkInterval = Math.max(90, 240 - (wave * 10));
-                if (actionTimer >= blinkInterval) {
+                // 瞬移頻率提高：最短不到 1 秒 (50幀) 瞬移一次
+                int blinkInterval = Math.max(50, 120 - (wave * 10));
+                if (skillTimer >= blinkInterval) {
                     blink();
-                    actionTimer = 0;
+                    skillTimer = 0;
                 }
                 break;
+
+            case NORMAL:
+                break; // NORMAL 的特殊能力是多重彈幕，寫在射擊邏輯裡了
         }
+
+        // 因為子彈由 onShoot 處理了，這裡直接回傳 null 即可
         return null;
     }
 
-    // 🎯 這是你原本 BOSS 的核心邏輯：狂暴與發射子彈
-    private Bullet handleOriginalBossLogic(Castle targetCastle) {
-        // 1. 狂暴判定
-        if (!isEnraged && this.hp < (this.maxHp / 2)) {
-            isEnraged = true;
-            this.speed *= 2.0;
-            setSpriteColor(Color.ORANGERED);
-        }
+    private void performShoot(Castle targetCastle) {
+        if (onShoot == null) return;
 
-        // 2. 攻擊計時
-        attackCooldown++;
-        if (attackCooldown >= 90) {
-            attackCooldown = 0;
-            // 射向主堡中心
-            return new Bullet(
-                    this.getX() + 50, this.getY() + 100,
-                    this.getX(), targetCastle.getY(),
+        double startX = this.getX() + 50; // 從 BOSS 中間發射
+        double startY = this.getY() + 80;
+        double targetX = targetCastle.getX() + 400; // 瞄準主堡中心
+        double targetY = targetCastle.getY();
+
+        if (type == BossType.NORMAL) {
+            // ⭐ NORMAL BOSS: 扇形多發子彈 (1~5 發)
+            int bulletCount = Math.min(1 + (wave / 2), 5);
+            double spreadAngle = 0.3; // 子彈散開的角度
+
+            for (int i = 0; i < bulletCount; i++) {
+                double offset = (bulletCount == 1) ? 0 : (i - (bulletCount - 1) / 2.0) * spreadAngle;
+                double angle = Math.atan2(targetY - startY, targetX - startX) + offset;
+
+                double vx = Math.cos(angle) * 100 + startX;
+                double vy = Math.sin(angle) * 100 + startY;
+
+                onShoot.accept(new Bullet(
+                        startX, startY, vx, vy,
+                        this.baseDamage, 5.0 + (wave * 0.2), true, WeaponType.NORMAL
+                ));
+            }
+        } else {
+            // ⭐ 其他 BOSS: 規矩地射單發子彈
+            onShoot.accept(new Bullet(
+                    startX, startY, targetX, targetY,
                     this.baseDamage, 4.0, true, WeaponType.NORMAL
-            );
+            ));
         }
-        return null;
     }
 
     private void spawnMinions() {
@@ -120,16 +153,13 @@ public class BossEnemy extends Enemy {
             double offsetX = (Math.random() - 0.5) * 120;
             double spawnX = Math.max(0, Math.min(780, this.getX() + offsetX));
 
-            // ✅ 這裡會 Call MeleeEnemy
             Enemy minion = new MeleeEnemy(spawnX, this.getY());
-
             setupMinionAppearance(minion);
             minion.enhanceStats(0.5 + (wave * 0.1));
             onSpawnMinion.accept(minion);
         }
     }
 
-    // 💡 修改這個方法來適應圓形小怪的縮小邏輯
     private void setupMinionAppearance(Enemy minion) {
         Node mNode = minion.getSprite();
         Shape mShape = null;
@@ -141,16 +171,10 @@ public class BossEnemy extends Enemy {
         }
 
         if (mShape != null) {
-            // 1. 雖然 MeleeEnemy 建構子是紅色，母體噴出來的我們還是強制給它淺綠色做區分
             mShape.setFill(Color.LIGHTGREEN);
-
-            // 2. ⭐ 這裡修正：判斷如果是圓形 (Circle)，則縮小半徑
             if (mShape instanceof javafx.scene.shape.Circle) {
-                // 原本半徑 15 (直徑30)，缩小的直徑設為 25，所以半徑為 12.5
                 ((javafx.scene.shape.Circle) mShape).setRadius(12.5);
-            }
-            // 保留 Rectangle 的判斷，以防萬一以後召喚別種怪
-            else if (mShape instanceof javafx.scene.shape.Rectangle) {
+            } else if (mShape instanceof javafx.scene.shape.Rectangle) {
                 ((javafx.scene.shape.Rectangle) mShape).setWidth(25);
                 ((javafx.scene.shape.Rectangle) mShape).setHeight(25);
             }

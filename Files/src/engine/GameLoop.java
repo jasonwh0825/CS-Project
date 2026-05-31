@@ -536,26 +536,49 @@ public class GameLoop extends AnimationTimer {
     }
 
     private void showGameOverScreen() {
-        VBox box = new VBox(20);
+        VBox box = new VBox(25); // 稍微增加間距
         box.setAlignment(Pos.CENTER);
-        box.setStyle("-fx-background-color: rgba(0,0,0,0.8);");
-        box.setPrefSize(1000, 700); // 寬度配合現在的 1000
+        // 這裡的背景遮罩維持深色半透明，這樣在白色遊戲背景上會非常醒目
+        box.setStyle("-fx-background-color: rgba(0,0,0,0.85);");
+        box.setPrefSize(1000, 700);
 
         Label l = new Label("GAME OVER");
-        l.setFont(new Font(50));
+        l.setFont(Font.font("System", FontWeight.BOLD, 60)); // 加粗並放大
         l.setTextFill(Color.RED);
 
-        // 新增：顯示這場獲得的總經驗值
+        // 顯示獲得的經驗值
         Label expLabel = new Label("獲得經驗值: " + (int)castle.getExp() + " EXP");
-        expLabel.setFont(new Font(30));
+        expLabel.setFont(Font.font("System", FontWeight.BOLD, 30));
         expLabel.setTextFill(Color.GOLD);
 
+        // ==========================================
+        // ✨ 重新設計的按鈕 (對齊開始遊戲風格)
+        // ==========================================
         Button r = new Button("結算並返回首頁");
-        r.setFont(new Font(20));
+
+        // 設定字體 (對齊開始遊戲的 BOLD 24)
+        r.setFont(Font.font("System", FontWeight.BOLD, 24));
+
+        // 設定樣式：使用與開始遊戲相似的綠色，並加上圓角與手型游標
+        // 如果你希望更像「結束」的感覺，也可以把 #4CAF50 (綠) 改成 #FF9800 (橘)
+        r.setStyle(
+                "-fx-background-color: #4CAF50; " +
+                        "-fx-text-fill: white; " +
+                        "-fx-background-radius: 15; " +
+                        "-fx-cursor: hand; " +
+                        "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 0);"
+        );
+
+        // 設定按鈕大小 (參考開始遊戲的 180x60，因為字較多，寬度稍微拉長到 240)
+        r.setPrefSize(240, 60);
+
+        // 滑鼠懸停效果：讓按鈕互動感更好
+        r.setOnMouseEntered(e -> r.setStyle("-fx-background-color: #45a049; -fx-text-fill: white; -fx-background-radius: 15; -fx-cursor: hand;"));
+        r.setOnMouseExited(e -> r.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 15;"));
+
         r.setOnAction(e -> {
-            this.stop(); // 停止遊戲的迴圈
+            this.stop();
             if (onReturnToMenu != null) {
-                // 觸發回呼函數，把累積的 exp 傳回給 MainApp
                 onReturnToMenu.accept(castle.getExp());
             }
         });

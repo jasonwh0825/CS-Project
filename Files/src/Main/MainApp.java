@@ -453,6 +453,11 @@ public class MainApp extends Application {
             showLevelUpNotification(menuArea, currentAccountLevel);
             levelBeforeGame = currentAccountLevel;
         }
+
+        startBtn.setFocusTraversable(false);
+        fullScreenBtn.setFocusTraversable(false);
+        logoutBtn.setFocusTraversable(false);
+        exitBtn.setFocusTraversable(false);
     }
 
     public void showGameScene() {
@@ -488,6 +493,7 @@ public class MainApp extends Application {
         confirmBtnsBox.setAlignment(Pos.CENTER);
 
         Button yesBtn = new Button("確定離開");
+        yesBtn.setFocusTraversable(false);
         yesBtn.setFont(Font.font("System", FontWeight.BOLD, 18));
         yesBtn.setStyle("-fx-background-color: #d32f2f; -fx-text-fill: white; -fx-background-radius: 10;");
         yesBtn.setPrefSize(160, 45);
@@ -497,6 +503,7 @@ public class MainApp extends Application {
         });
 
         Button noBtn = new Button("點錯了，回去");
+        noBtn.setFocusTraversable(false);
         noBtn.setFont(Font.font("System", FontWeight.BOLD, 18));
         noBtn.setStyle("-fx-background-color: #757575; -fx-text-fill: white; -fx-background-radius: 10;");
         noBtn.setPrefSize(160, 45);
@@ -514,6 +521,7 @@ public class MainApp extends Application {
         pauseLabel.setFont(Font.font("System", FontWeight.BOLD, 48));
 
         Button continueBtn = new Button("繼續遊戲 ▶");
+        continueBtn.setFocusTraversable(false);
         continueBtn.setFont(Font.font("System", FontWeight.BOLD, 22));
         continueBtn.setStyle("-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-background-radius: 10;");
         continueBtn.setPrefSize(220, 50);
@@ -523,6 +531,7 @@ public class MainApp extends Application {
         });
 
         Button backToMenuBtn = new Button("回到主畫面 🏠");
+        backToMenuBtn.setFocusTraversable(false);
         backToMenuBtn.setFont(Font.font("System", FontWeight.BOLD, 20));
         backToMenuBtn.setStyle("-fx-background-color: #d32f2f; -fx-text-fill: white; -fx-background-radius: 10;");
         backToMenuBtn.setPrefSize(220, 50);
@@ -540,6 +549,7 @@ public class MainApp extends Application {
 
         Button pauseBtn = new Button("⏸ 暫停");
         pauseBtn.setFont(Font.font("System", FontWeight.BOLD, 16));
+        pauseBtn.setFocusTraversable(false);
         pauseBtn.setStyle("-fx-background-color: #555555; -fx-text-fill: white; -fx-background-radius: 5;");
         pauseBtn.setLayoutX(900);
         pauseBtn.setLayoutY(640);
@@ -608,12 +618,12 @@ public class MainApp extends Application {
 
             switch (event.getCode()) {
                 case SPACE: gameLoop.castUltimate(); break;
-                case DIGIT1: if (WeaponType.NORMAL.isUnlocked(currentAccountLevel)) gameLoop.switchWeapon(WeaponType.NORMAL); break;
-                case DIGIT2: if (WeaponType.ICE.isUnlocked(currentAccountLevel)) gameLoop.switchWeapon(WeaponType.ICE); break;
-                case DIGIT3: if (WeaponType.HEAVY.isUnlocked(currentAccountLevel)) gameLoop.switchWeapon(WeaponType.HEAVY); break;
-                case DIGIT4: if (WeaponType.HEAL.isUnlocked(currentAccountLevel)) gameLoop.switchWeapon(WeaponType.HEAL); break;
-                case DIGIT5: if (WeaponType.FIRE.isUnlocked(currentAccountLevel)) gameLoop.switchWeapon(WeaponType.FIRE); break;
-                case DIGIT6: if (WeaponType.SPEED_DOWN.isUnlocked(currentAccountLevel)) gameLoop.switchWeapon(WeaponType.SPEED_DOWN); break;
+                case DIGIT1: gameLoop.switchWeapon(WeaponType.NORMAL);break;
+                case DIGIT2: gameLoop.switchWeapon(WeaponType.SPEED_DOWN);break;
+                case DIGIT3: gameLoop.switchWeapon(WeaponType.ICE);break;
+                case DIGIT4: gameLoop.switchWeapon(WeaponType.HEAVY);break;
+                case DIGIT5: gameLoop.switchWeapon(WeaponType.HEAL);break;
+                case DIGIT6: gameLoop.switchWeapon(WeaponType.FIRE);break;
                 case Q: gameLoop.atklevelup(); break;
                 case E: gameLoop.hplevelup(); break;
             }

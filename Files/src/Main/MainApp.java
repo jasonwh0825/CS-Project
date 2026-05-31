@@ -340,7 +340,7 @@ public class MainApp extends Application {
                 rankLabel.setTextFill(Color.GOLD);
                 rankLabel.setFont(Font.font("System", FontWeight.BOLD, 14));
             } else if (rank == 2) {
-                rankLabel.setTextFill(Color.web("#E4E6EB"));
+                rankLabel.setTextFill(Color.web("#B3B3B3"));
             } else if (rank == 3) {
                 rankLabel.setTextFill(Color.web("#CD7F32")); // 銅色
             } else {

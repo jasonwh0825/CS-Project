@@ -115,7 +115,7 @@ public class GameLoop extends AnimationTimer {
                     bullets.add(b);
                     gamePane.getChildren().add(b.getSprite());
                 }
-                showWarningMessage("狂熱彈幕！發射 " + bulletCount + " 發子彈！");
+                showWarningMessage("全螢幕轟炸！發射 " + bulletCount + " 發子彈！");
                 break;
 
             case ICE:
@@ -130,7 +130,7 @@ public class GameLoop extends AnimationTimer {
                         e.takeDamage(80+atkLv*10);
                     }
                 }
-                showWarningMessage("絕對零度！全場凍結！");
+                showWarningMessage("極寒地獄！全場凍結！");
                 break;
 
             case HEAVY:
@@ -140,14 +140,14 @@ public class GameLoop extends AnimationTimer {
                     // 將怪物 Y 座標往上推，且不允許被推到畫面外 (最小為 0)
                     e.setY(Math.max(0, e.getY() - knockback));
                 }
-                showWarningMessage("引力震盪波！退避！");
+                showWarningMessage("震盪轟擊！退避！");
                 break;
 
             case HEAL:
                 // 【緊急修復】：依等級恢復最大生命值，20% 起跳，上限 50%
                 double healPercent = Math.min(0.5, 0.2 + (atkLv * 0.02));
                 castle.healByPercentage(healPercent);
-                showWarningMessage("緊急修復！恢復 " + (int)(healPercent * 100) + "% 生命值！");
+                showWarningMessage("生命回復！恢復 " + (int)(healPercent * 100) + "% 生命值！");
                 break;
 
             case FIRE:
@@ -160,7 +160,7 @@ public class GameLoop extends AnimationTimer {
                         e.takeDamage(fireDamage);
                     }
                 }
-                showWarningMessage("烈焰風暴！造成 " + (int)fireDamage + " 點傷害！");
+                showWarningMessage("末日烈焰！造成 " + (int)fireDamage + " 點傷害！");
                 break;
 
             case SPEED_DOWN:
@@ -175,7 +175,7 @@ public class GameLoop extends AnimationTimer {
                         e.takeDamage(80+atkLv*10);
                     }
                 }
-                showWarningMessage("時間泥沼！全場動作遲緩！");
+                showWarningMessage("緩速泥沼！全場動作遲緩！");
                 break;
         }
     }

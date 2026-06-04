@@ -39,16 +39,23 @@ public abstract class Enemy extends Entity {
 
         // 不要用 getBoundsInLocal().getWidth()，因為動畫會干擾它
         // 直接根據怪物類型給予固定寬度
-        double barWidth = (this instanceof BossEnemy) ? 100 : 50;
+        double barWidth = (this instanceof BossEnemy) ? 100 : 30;
 
         double percent = Math.max(0, hp / maxHp);
         hpBar.setWidth(barWidth * percent);
 
         // 位置同步：放在怪物頭頂上 10 像素
-        hpBar.setTranslateX(sprite.getTranslateX());
+        if (this instanceof  MeleeEnemy){
+        hpBar.setTranslateX(sprite.getTranslateX()-15);
         hpBar.setTranslateY(sprite.getTranslateY() - 15);
-        hpBarBg.setTranslateX(sprite.getTranslateX());
-        hpBarBg.setTranslateY(sprite.getTranslateY() - 15);
+        hpBarBg.setTranslateX(sprite.getTranslateX()-15);
+        hpBarBg.setTranslateY(sprite.getTranslateY() - 15);}
+        else{
+            hpBar.setTranslateX(sprite.getTranslateX());
+            hpBar.setTranslateY(sprite.getTranslateY() - 15);
+            hpBarBg.setTranslateX(sprite.getTranslateX());
+            hpBarBg.setTranslateY(sprite.getTranslateY() - 15);
+        }
     }
 
     private void applyEnemyEffects() {

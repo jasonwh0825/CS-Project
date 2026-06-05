@@ -320,9 +320,13 @@ public class GameLoop extends AnimationTimer {
                     }
                     castle.addReward(e.getRewardGold(), e.getRewardExp());
 
-                    if (currentWeapon == WeaponType.HEAL && castle.getHp() < castle.getMaxHp()) {
+                    if (currentWeapon == WeaponType.HEAL && castle.getHp()+(5*castle.getAtkLevel()) <= castle.getMaxHp()) {
                         castle.takeDamage(-5 * castle.getAtkLevel());
-                    }
+                    }else {
+
+                    if (currentWeapon == WeaponType.HEAL ) {
+                        castle.takeDamage(castle.getHp()-castle.getMaxHp());
+                    }}
                 }
 
                 // 3. 處理 BOSS 死亡與波數推進特效

@@ -53,11 +53,9 @@ public class BossEnemy extends Enemy {
                 break;
             case SWARM_MOTHER:
                 setSpriteColor(Color.DARKGREEN);
-                setSpriteSize(60, 60);
                 break;
             case VOID_BLINKER:
                 setSpriteColor(Color.PURPLE);
-                setSpriteSize(60, 60);
                 break;
         }
     }

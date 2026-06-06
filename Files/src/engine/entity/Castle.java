@@ -21,7 +21,8 @@ public class Castle extends Entity {
 
     private int atkLevel = 1;
     private int hpLevel = 1;
-    public double currentAtkDamage = 0.0; //現在這是增加量
+    public double currentAtkDamage = 0.0;//現在這是增加量
+    private DropShadow originalGlow; // 用來記住主堡原本的發光特效
 
     public Castle(double x, double y, int accountLevel) {
         // 修改：初始顏色給一個基礎藍，稍後會被漸層覆蓋
@@ -36,29 +37,27 @@ public class Castle extends Entity {
         if (this.sprite instanceof Shape) {
             Shape body = (Shape) this.sprite;
 
-            // ⭐ 換成「暗岩黑」到「金屬灰」的漸層，更有厚重感
+            // 漸層與邊框設定 (維持你喜歡的顏色)
             Stop[] stops = new Stop[] {
-                    new Stop(0, Color.web("#2c3e50")), // 深藍黑
-                    new Stop(0.5, Color.web("#4b79a1")), // 金屬藍
-                    new Stop(1, Color.web("#283e51"))  // 回到深色
+                    new Stop(0, Color.web("#1a1a1a")),
+                    new Stop(0.5, Color.web("#333333")),
+                    new Stop(1, Color.web("#1a1a1a"))
             };
-            LinearGradient gradient = new LinearGradient(0, 0, 1, 0, true, CycleMethod.NO_CYCLE, stops);
-            body.setFill(gradient);
+            LinearGradient lg = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
+            body.setFill(lg);
 
-            // ⭐ 外框線：增加一條細細的金邊，增加質感
-            body.setStroke(Color.web("#f1c40f", 0.5));
-            body.setStrokeWidth(2);
+            body.setStroke(Color.web("#00d2ff"));
+            body.setStrokeWidth(3);
 
-            // ⭐ 發光效果：換成更有壓迫感的橙色或淡紫色核心光暈
-            DropShadow glow = new DropShadow();
-            glow.setColor(Color.web("#f39c12", 0.6)); // 暖橘光
-            glow.setRadius(30);
-            glow.setSpread(0.1);
-            body.setEffect(glow);
+            // ⭐ 修正：將 Glow 存入我們剛剛宣告的變數中
+            originalGlow = new DropShadow();
+            originalGlow.setColor(Color.web("#00d2ff", 0.6));
+            originalGlow.setRadius(20);
+            body.setEffect(originalGlow);
 
-            // 呼吸動畫維持，但幅度調小一點點，看起來更沉穩
-            ScaleTransition breath = new ScaleTransition(Duration.seconds(2.5), body);
-            breath.setByY(0.05);
+            // 呼吸動畫 (這段只會在遊戲開始時執行一次！)
+            ScaleTransition breath = new ScaleTransition(Duration.seconds(3), body);
+            breath.setByY(0.03);
             breath.setAutoReverse(true);
             breath.setCycleCount(Animation.INDEFINITE);
             breath.play();
@@ -126,17 +125,17 @@ public class Castle extends Entity {
         ColorAdjust flash = new ColorAdjust();
         flash.setBrightness(0.8); // 瞬間變亮
 
-        // 保留原本的發光效果並疊加閃白
-        if (sprite.getEffect() != null) {
-            flash.setInput(sprite.getEffect());
+        // 將閃白疊加在原有的發光特效上
+        if (originalGlow != null) {
+            flash.setInput(originalGlow);
         }
         sprite.setEffect(flash);
 
         // 0.1 秒後恢復
         PauseTransition pause = new PauseTransition(Duration.millis(100));
         pause.setOnFinished(e -> {
-            // 恢復成原本的 Glow 效果
-            applyVisualEffects();
+            // ⭐ 修正：只恢復發光特效，絕對不要再呼叫 applyVisualEffects() 了！
+            sprite.setEffect(originalGlow);
         });
         pause.play();
     }

@@ -442,7 +442,7 @@ public class GameLoop extends AnimationTimer {
 
         // 直接使用 currentWave 來計算強度
         if (currentWave > 1) {
-            double multiplier = 1.0 + (currentWave - 1) * 0.5;
+            double multiplier = 1.0 + (currentWave - 1);
             e.enhanceStats(multiplier);
         }
 

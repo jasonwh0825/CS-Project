@@ -39,14 +39,18 @@ public class Castle extends Entity {
 
             // 漸層與邊框設定 (維持你喜歡的顏色)
             Stop[] stops = new Stop[] {
-                    new Stop(0, Color.web("#1a1a1a")),
-                    new Stop(0.5, Color.web("#333333")),
-                    new Stop(1, Color.web("#1a1a1a"))
+                    new Stop(0.00, Color.web("#FF0000")), // 紅
+                    new Stop(0.16, Color.web("#FF7F00")), // 橙
+                    new Stop(0.33, Color.web("#FFFF00")), // 黃
+                    new Stop(0.50, Color.web("#00FF00")), // 綠
+                    new Stop(0.66, Color.web("#0000FF")), // 藍
+                    new Stop(0.83, Color.web("#4B0082")), // 靛
+                    new Stop(1.00, Color.web("#9400D3"))  // 紫
             };
-            LinearGradient lg = new LinearGradient(0, 0, 0, 1, true, CycleMethod.NO_CYCLE, stops);
-            body.setFill(lg);
+            LinearGradient rainbowGradient = new LinearGradient(0, 0, 1, 0, true, CycleMethod.NO_CYCLE, stops);
+            body.setFill(rainbowGradient);
 
-            body.setStroke(Color.web("#00d2ff"));
+            body.setStroke(Color.WHITE);
             body.setStrokeWidth(3);
 
             // ⭐ 修正：將 Glow 存入我們剛剛宣告的變數中

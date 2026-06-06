@@ -54,13 +54,6 @@ public class Castle extends Entity {
             originalGlow.setColor(Color.web("#00d2ff", 0.6));
             originalGlow.setRadius(20);
             body.setEffect(originalGlow);
-
-            // 呼吸動畫 (這段只會在遊戲開始時執行一次！)
-            ScaleTransition breath = new ScaleTransition(Duration.seconds(3), body);
-            breath.setByY(0.03);
-            breath.setAutoReverse(true);
-            breath.setCycleCount(Animation.INDEFINITE);
-            breath.play();
         }
     }
 
